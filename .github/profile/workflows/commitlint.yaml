@@ -6,12 +6,12 @@ on:
       - opened
       - synchronize
     branches:
-      - master
+      - main
       - release
       - production
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     name: test changes
     steps:
