@@ -27,9 +27,9 @@ jobs:
           path: github-configs
           ref: main
 
-      - name: Override package.json
+      - name: Copy commitlint config files to root dir
         run: |
-          mv -f github-configs/.github/files/commitlint/package.json .
+          cp -f github-configs/files/commitlint/* .
 
       - name: Setup Node
         uses: actions/setup-node@v3
@@ -39,10 +39,6 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-
-      - name: Create commitlint.config.js
-        run: |
-          echo "module.exports = {extends: ['@commitlint/config-conventional']}" > commitlint.config.js
 
       - name: Validate commits
         run: |
