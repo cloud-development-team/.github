@@ -1,0 +1,12 @@
+{
+  "name": "commitlint",
+  "version": "1.0.0",
+  "description": "Enforce commit lint for canonicalizing commits",
+  "scripts": {},
+  "author": "HoSeong Lee",
+  "license": "MIT",
+  "devDependencies": {
+    "@commitlint/cli": "^17.6.3",
+    "@commitlint/config-conventional": "^17.6.3"
+  }
+}
