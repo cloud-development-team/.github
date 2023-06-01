@@ -23,7 +23,7 @@ jobs:
       - name: Checkout lint config file
         uses: actions/checkout@v3
         with:
-          repository: htaic/.github
+          repository: cloud-development-team/.github
           path: github-configs
           ref: main
 
