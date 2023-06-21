@@ -1,0 +1,32 @@
+name: Teams Notification
+
+on:
+  workflow_call:
+    inputs:
+      custom_actions:
+        required: false
+        description: "add custom actions to notification message (check https://github.com/toko-bifrost/ms-teams-deploy-card/tree/master/#usage)"
+        type: string
+        default: |
+          - text: View Pull Request
+            url: ${{ github.event.pull_request.html_url }}
+    secrets:
+      WEBHOOK_URI:
+        required: true
+        description: "uri of webhook"
+
+jobs:
+  notification:
+    name: Notification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: toko-bifrost/ms-teams-deploy-card@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          webhook-uri: ${{ secrets.WEBHOOK_URI }}
+          card-layout-start: complete
+          show-on-start: true
+          show-on-exit: false
+          enable-view-status: false
+          custom-actions: |
+            ${{ inputs.custom_actions }}
