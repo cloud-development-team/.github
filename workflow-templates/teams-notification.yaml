@@ -8,7 +8,7 @@ on:
 
 jobs:
   notification:
-    uses: cloud-development-team/.github/.github/workflows/teams-notification.yaml
+    uses: cloud-development-team/.github/.github/workflows/teams-notification.yaml@main
     inputs:
       # How to use: https://github.com/toko-bifrost/ms-teams-deploy-card/tree/master/#usage
       custom_actions: |
