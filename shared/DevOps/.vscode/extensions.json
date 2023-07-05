@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode", // Prettier
+    "4ops.terraform", // Terraform
+    "bierner.markdown-preview-github-styles", // Markdown GitHub style preview
+    "oderwat.indent-rainbow", // Makes it easier to recognize indents
+    "mechatroner.rainbow-csv" // Makes it easier to recognize CSV datas
+  ]
+}
