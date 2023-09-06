@@ -13,13 +13,19 @@
 여기서 `<project code>`의 경우, 프로젝트 이름의 길이가 긴 경우가 존재하여 레파지토리 명명 규칙에 적용시키기 쉽도록 적합하게 줄인 약어 입니다.
 코드와 프로젝트 이름의 관계는 아래의 프로젝트 리스트에서 확인하실 수 있습니다.
 
+## 도메인 이름 규칙
+
+아래의 Confluence Page를 참고 부탁드립니다.
+https://hanwhavision.atlassian.net/wiki/spaces/KDOG/pages/290848889/DNS+Naming+Convention+for+Hanwha+Vision
+
 ## 프로젝트 리스트
 
 프로젝트에 대한 간단한 설명과 레파지토리 이름에 사용할 약어 등을 정리해 두는 테이블입니다.
 
 | Project Name | Abbreviation | Description                     |
 |--------------|--------------|---------------------------------|
-| hanwhacloud  | hc           | 클라우드 플랫폼 개발 프로젝트                |
+| hanwhacloud  | hc           | 클라우드 플랫폼 개발 프로젝트 (이전 프로젝트 이름으로 현재는 dmpro입니다. 추후 삭제 예정)                |
+| dmpro        | dmpro        | Device Manager Pro 프로젝트  |
 | sokcho       | sokcho       | hanwhacloud 개발 이전에 사용할 pilot 용도 |
 | cloudrnd     | cloudrnd     | Cloud 개발팀에서 전반적으로 사용될 리소스용      |
 |              |              |                                 |
