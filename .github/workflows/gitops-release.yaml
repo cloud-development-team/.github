@@ -1,0 +1,68 @@
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+name: GitOps Release container image
+
+on:
+  workflow_call:
+    inputs:
+      repository_name:
+        required: true
+        description: "Name of repository"
+        type: string
+      repository_ref:
+        required: false
+        description: "Ref value of repository"
+        type: string
+        default: "main"
+      image_name:
+        required: true
+        description: "Name of container registry and image"
+        type: string
+      image_tag:
+        required: true
+        description: "Tag of image"
+        type: string
+      yaml_path:
+        required: true
+        description: "Path to the yaml file defined for the application"
+        type: string
+    secrets:
+      GH_USERNAME:
+        required: true
+      GH_MANAGEPACKAGETOKEN:
+        required: false
+        description: "If not provided, the repo creds will be used."
+
+jobs:
+  gitops-release:
+    runs-on: ubuntu-latest
+    name: GitOps Release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Checkout state repo
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repository_name }}
+          path: ./gitops
+          ref: ${{ inputs.repository_ref }}
+          token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+
+      - name: Update image name and tag
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '
+              .image.repository = "${{ inputs.image_name }}" |
+              .image.tag = "${{ inputs.image_tag }}"
+            ' ./gitops/${{ inputs.yaml_path }}
+
+      - name: Commit changes
+        working-directory: ./gitops
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
+          git push origin main
+        continue-on-error: true
