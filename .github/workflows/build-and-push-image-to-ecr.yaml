@@ -11,6 +11,10 @@ on:
         required: true
         description: "Name of docker registry to publish. Does not need ghcr.io/cloud-development-team/ in front."
         type: string
+      image_tag:
+        required: false
+        description: "Additional tag for cretead image"
+        type: string
       dockerfile_name:
         required: false
         description: "dockerfile's name if it's different than the conventional name"
@@ -29,10 +33,6 @@ on:
         required: true
         description: "Name of ECR repository"
         type: string
-      image_tag:
-        required: false
-        description: "Additional tag for cretead image"
-        type: string
       environment:
         description: "Environment name for tagging"
         type: string
@@ -48,6 +48,8 @@ on:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
+      DOCKER_BUILD_ARGS:
+        required: false
 
 jobs:
   create-tag:
