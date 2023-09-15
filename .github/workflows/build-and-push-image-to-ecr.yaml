@@ -29,11 +29,19 @@ on:
         required: true
         description: "AWS region to upload container image to ECR"
         type: string
+      ecr_registry:
+        required: true
+        type: string
       ecr_repository:
         required: true
         description: "Name of ECR repository"
         type: string
+      role_to_assume:
+        required: true
+        description: "Name of role after config aws credentials"
+        type: string
       environment:
+        required: false
         description: "Environment name for tagging"
         type: string
         default: "dev"
@@ -80,7 +88,7 @@ jobs:
 
       - name: SHA short
         id: sha_short
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        run: echo "sha_short=$(git rev-parse --short HEAD)-$(date +'%Y%m%dT%H%M%S')" >> $GITHUB_OUTPUT
 
       - name: Result
         run: |
@@ -99,36 +107,32 @@ jobs:
           fetch-depth: 0
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ inputs.ecr_region }}
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ inputs.role_to_assume }}
 
-      - name: Push image to ECR
-        id: build-image
-        env:
-          IMAGE_TAG: ${{ needs.create-tag.outputs.sha_short }}, ${{ needs.create-tag.outputs.version }}
-        run: |
-          # Assume Role to ado016-prod account
-          export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
-          $(aws sts assume-role \
-          --role-arn arn:aws:iam::184738677759:role/AWSControlTowerExecution \
-          --role-session-name GitHubPipeline \
-          --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
-          --output text))
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: 'true'
 
-          # Check who am I
-          aws sts get-caller-identity
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-          # Login to ECR
-          ECR_REGISTRY=`aws ecr describe-registry --region ${{ inputs.ecr_region }} | jq ".registryId" | sed 's/\"//g'`.dkr.ecr.${{ inputs.ecr_region }}.amazonaws.com
-          aws ecr get-login-password --region ${{ inputs.ecr_region }} | docker login -u AWS --password-stdin $ECR_REGISTRY
-
-          # Docker Build
-          IFS=', ' read -r -a tags <<< "$IMAGE_TAG"
-          for tag in "${tags[@]}"; do
-            docker build -t $ECR_REGISTRY/${{ inputs.ecr_repository }}:$tag -f ${{ inputs.working_dir }}/${{ inputs.dockerfile_name }} .
-            docker push $ECR_REGISTRY/${{ inputs.ecr_repository }}:$tag
-          done
-          docker images
+      - name: Build, tag, and push image to Amazon ECR
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ inputs.dockerfile_name }}
+          push: true
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha, mode=max
+          tags: |
+            "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.version }}"
+            "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.datetime }}"
+            "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.sha_short }}"
