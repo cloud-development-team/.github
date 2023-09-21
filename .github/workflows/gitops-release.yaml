@@ -25,6 +25,16 @@ on:
         required: true
         description: "Path to the yaml file defined for the application"
         type: string
+      application_name:
+        required: false
+        description: "Name of actual application"
+        type: string
+        default: ""
+      version_file_path:
+        required: false
+        description: "Path to the yaml file described all version of application"
+        type: string
+        default: "version.yaml"
     secrets:
       GH_USERNAME:
         required: true
@@ -56,6 +66,16 @@ jobs:
               .image.repository = "${{ inputs.image_name }}" |
               .image.tag = "${{ inputs.image_tag }}"
             ' ./gitops/${{ inputs.yaml_path }}
+
+      - name: Update version information
+        if: ${{ inputs.application_name }} != ""
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '
+              .${{ inputs.application_name }}.image-tag = "${{ inputs.image_tag }}" |
+              .${{ inputs.application_name }}.commit-sha = "${{ steps.github-var.outputs.sha_short }}"
+            ' ./gitops/${{ inputs.version_file_path }}
 
       - name: Commit changes
         working-directory: ./gitops
