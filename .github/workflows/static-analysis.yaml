@@ -1,59 +1,99 @@
 name: source code quality check
 
+run-name:  Sightmind R${{ github.run_number }} with branch ${{ github.ref_name }} 🚀
+
 on:
   workflow_call:
     inputs:
-      cim_server:
+      CIM_SERVER:
+        description: 'Domain of cim server'
         required: false
-        description: "Name of repository"
         type: string
         default: "cim.kdoggy.systems"
-      repository_name:
+      REPO_NAME:
+        description: 'Name of repository'
         required: true
-        description: "Name of repository"
         type: string
-    secrets:
-      GH_MANAGEPACKAGE_TOKEN:
+        default: 'sightmind-backend-mono'
+      BUILD_PATH:
+        description: 'Build target path under repository'
+        required: true
+        type: string
+        default: 'sightmind-backend-mono'
+      QUALITY_REPORT:
+        description: 'Make static analysis result report'
         required: false
-        description: "If not provided, the repo creds will be used."
-      CIM_PASSWD:
-        required: true
-        description: "If not provided, the repo creds will be used."
-      CIM_USER:
-        required: true
-        description: "If not provided, the repo creds will be used."
+        type: boolean
+        default: true
+      DEPLOY:
+        required: false
+        type: string
+        default: 'development'
+
 jobs:
   coverity:
+    name: Quality Check
+    
     runs-on: ubuntu-latest
-
+    
     permissions:
       deployments: write
-
+    
+    env:
+      BUILD_PATH: ./${{ inputs.REPO_NAME }}/${{ inputs.BUILD_PATH }}
+    
     container:
-      image: ghcr.io/platform-sw-se-team/coverity-github:1.0.0
-      options: --user root
-      credentials:
-        username: jenkins
-        password: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-  
-    name: Quality Check
+        image: ghcr.io/platform-sw-se-team/coverity-github:1.0.0
+        options: --user root
+        credentials:
+           username: jenkins
+           password: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
     steps:
+      - name: Greeting
+        run: |
+          echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+          echo "github.job: ${{ github.job }}"
+          echo "REPO_NAME: $REPO_NAME"
+          echo "QUALITY_REPORT: $QUALITY_REPORT"
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE" #/__w/helloworld/helloworld
+        env:
+          REPO_NAME: ${{ inputs.REPO_NAME }}
+          QUALITY_REPORT: ${{ inputs.QUALITY_REPORT }}
+
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          path: ./${{ inputs.repository_name }}
+        with:       
+          path: ./${{ inputs.REPO_NAME }}
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          fetch-depth: 0
+
+      - uses: chrnorm/deployment-action@v2
+        name: Create GitHub deployment
+        id: deployment
+        with:
+          token: '${{ github.token }}'
+          environment: ${{ inputs.DEPLOY }}
 
       - name: coverity
-        working-directory: ./${{ inputs.repository_name }}
+        if: inputs.QUALITY_REPORT == true
+        working-directory: ${{ env.BUILD_PATH }}
         run: |
-          echo "CI_STEP_StaticAnalysis "          
-          STREAM="mopl-${{ inputs.repository_name }}"
+          echo "CI_STEP_StaticAnalysis"
+
+          #추후 저장소명, 브랜치명 변경시 확인 필요
+          if [ "${{ inputs.REPO_NAME }}" = "hc-frontend-mono" ] ; then
+            STREAM="sightmind-${{ inputs.REPO_NAME }}"
+          else
+            STREAM="${{ inputs.REPO_NAME }}"
+          fi
+
           CSA_DIR=/home/jenkins/cov-analysis
           COVERITY_CONFIG=${GITHUB_WORKSPACE}/coverity_config
           COVERITY_CONFIG_XML=${GITHUB_WORKSPACE}/coverity_config/config.xml
           COVERITY_INTERMEDIATE=${GITHUB_WORKSPACE}/coverity_emit_data
+          CIM_USER=stream_account
+          CIM_PASSWD=stream
 
           mkdir $COVERITY_CONFIG
           mkdir $COVERITY_INTERMEDIATE
@@ -61,9 +101,9 @@ jobs:
           ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --typescript
           
           APP_REVISION=`git rev-parse --short HEAD`;
-          ${CSA_DIR}/bin/cov-build --config ${COVERITY_CONFIG_XML} --dir ${COVERITY_INTERMEDIATE} -fs-capture-search ${GITHUB_WORKSPACE}/${{ inputs.repository_name }} --no-command
+          ${CSA_DIR}/bin/cov-build --config ${COVERITY_CONFIG_XML} --dir ${COVERITY_INTERMEDIATE} -fs-capture-search ${GITHUB_WORKSPACE}/${{ inputs.REPO_NAME }} --no-command
           ${CSA_DIR}/bin/cov-analyze --aggressiveness-level high --all --dir ${COVERITY_INTERMEDIATE} --wait-for-license
-          cov_commit="${CSA_DIR}/bin/cov-commit-defects --url https://${{ secrets.CIM_USER }}:${{ secrets.CIM_PASSWD }}@${{ inputs.cim_server }} --ssl --stream ${STREAM} --dir ${COVERITY_INTERMEDIATE} --version ${APP_REVISION}";
+          cov_commit="${CSA_DIR}/bin/cov-commit-defects --url https://${CIM_USER}:${CIM_PASSWD}@${{ inputs.CIM_SERVER }} --ssl --stream ${STREAM} --dir ${COVERITY_INTERMEDIATE} --version ${APP_REVISION}";
           max_try_count=10;
           while ! ${cov_commit} && [ $max_try_count -ne 0 ]; do
               echo "Remaining  try-count : ${max_try_count}";
@@ -74,3 +114,21 @@ jobs:
                   exit 1;
               fi
           done
+
+      - name: Update deployment status (success)
+        if: success()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: '${{ github.token }}'
+          environment-url: ${{ steps.deployment.outputs.environment_url }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          state: 'success'
+
+      - name: Update deployment status (failure)
+        if: failure()
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: '${{ github.token }}'
+          environment-url: ${{ steps.deployment.outputs.environment_url }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          state: 'failure'
