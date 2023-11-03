@@ -1,0 +1,76 @@
+name: source code quality check
+
+on:
+  workflow_call:
+    inputs:
+      cim_server:
+        required: false
+        description: "Name of repository"
+        type: string
+        default: "cim.kdoggy.systems"
+      repository_name:
+        required: true
+        description: "Name of repository"
+        type: string
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN:
+        required: false
+        description: "If not provided, the repo creds will be used."
+      CIM_PASSWD:
+        required: true
+        description: "If not provided, the repo creds will be used."
+      CIM_USER:
+        required: true
+        description: "If not provided, the repo creds will be used."
+jobs:
+  coverity:
+    runs-on: ubuntu-latest
+
+    permissions:
+      deployments: write
+
+    container:
+      image: ghcr.io/platform-sw-se-team/coverity-github:1.0.0
+      options: --user root
+      credentials:
+        username: jenkins
+        password: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+  
+    name: Quality Check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          path: ./${{ inputs.repository_name }}
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: coverity
+        working-directory: ./${{ inputs.repository_name }}
+        run: |
+          echo "CI_STEP_StaticAnalysis "          
+          STREAM="mopl-${{ inputs.repository_name }}"
+          CSA_DIR=/home/jenkins/cov-analysis
+          COVERITY_CONFIG=${GITHUB_WORKSPACE}/coverity_config
+          COVERITY_CONFIG_XML=${GITHUB_WORKSPACE}/coverity_config/config.xml
+          COVERITY_INTERMEDIATE=${GITHUB_WORKSPACE}/coverity_emit_data
+
+          mkdir $COVERITY_CONFIG
+          mkdir $COVERITY_INTERMEDIATE
+          ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --javascript
+          ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --typescript
+          
+          APP_REVISION=`git rev-parse --short HEAD`;
+          ${CSA_DIR}/bin/cov-build --config ${COVERITY_CONFIG_XML} --dir ${COVERITY_INTERMEDIATE} -fs-capture-search ${GITHUB_WORKSPACE}/${{ inputs.repository_name }} --no-command
+          ${CSA_DIR}/bin/cov-analyze --aggressiveness-level high --all --dir ${COVERITY_INTERMEDIATE} --wait-for-license
+          cov_commit="${CSA_DIR}/bin/cov-commit-defects --url https://${{ secrets.CIM_USER }}:${{ secrets.CIM_PASSWD }}@${{ inputs.cim_server }} --ssl --stream ${STREAM} --dir ${COVERITY_INTERMEDIATE} --version ${APP_REVISION}";
+          max_try_count=10;
+          while ! ${cov_commit} && [ $max_try_count -ne 0 ]; do
+              echo "Remaining  try-count : ${max_try_count}";
+              max_try_count=$((max_try_count-1)); 
+              sleep 120;
+              if [ $max_try_count -eq "0" ] ; then
+                  echo "fail cov-commit";
+                  exit 1;
+              fi
+          done
