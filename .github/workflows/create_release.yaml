@@ -26,7 +26,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}           
         with:
           fetch-depth: 0
-          repo: cloudrnd-experimental-test          
+          repository: cloud-development-team/cloudrnd-experimental-test          
 
       - name: Semantic Version
         id: version
@@ -51,7 +51,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}        
         with:
           fetch-depth: 0
-          repo: cloudrnd-experimental-test
+          repository: cloud-development-team/cloudrnd-experimental-test
 
       # - name: Build Release Changelog
       #   id: release_changelog
