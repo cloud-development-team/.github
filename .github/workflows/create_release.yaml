@@ -26,7 +26,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}           
         with:
           fetch-depth: 0
-          repository: cloud-development-team/cloudrnd-experimental-test          
+          repository: cloud-development-team/cloudrnd-experimental-test
+          ref: main
 
       - name: Semantic Version
         id: version
@@ -52,6 +53,7 @@ jobs:
         with:
           fetch-depth: 0
           repository: cloud-development-team/cloudrnd-experimental-test
+          ref: main
 
       # - name: Build Release Changelog
       #   id: release_changelog
