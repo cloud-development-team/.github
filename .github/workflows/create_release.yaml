@@ -23,7 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         env:
-          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}           
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}           
         with:
           fetch-depth: 0
           repository: cloud-development-team/cloudrnd-experimental-test          
@@ -48,7 +48,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         env:
-          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}        
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
         with:
           fetch-depth: 0
           repository: cloud-development-team/cloudrnd-experimental-test
@@ -62,7 +62,7 @@ jobs:
       - name: Create Release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ needs.versioning.outputs.version }}
           release_name: ${{ needs.versioning.outputs.version }}
