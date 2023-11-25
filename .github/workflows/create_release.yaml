@@ -28,6 +28,7 @@ jobs:
           fetch-depth: 0
           repository: cloud-development-team/cloudrnd-experimental-test
           ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Semantic Version
         id: version
@@ -48,12 +49,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
         with:
           fetch-depth: 0
           repository: cloud-development-team/cloudrnd-experimental-test
           ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # - name: Build Release Changelog
       #   id: release_changelog
