@@ -21,9 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}           
+        uses: actions/checkout@v3        
         with:
           fetch-depth: 0
           repository: cloud-development-team/cloudrnd-experimental-test
@@ -48,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3      
         with:
           fetch-depth: 0
           repository: cloud-development-team/cloudrnd-experimental-test
