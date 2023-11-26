@@ -24,58 +24,57 @@ jobs:
       - name: test
         run: |
           echo "${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}"
-          echo "${{ secrets.GH_PAT_AUTOMATION }}" 
 
-  #     - name: Checkout
-  #       uses: actions/checkout@v4      
-  #       with:
-  #         token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-  #         repository: cloud-development-team/cloudrnd-experimental-test
-  #         ref: main
-  #         fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v4      
+        with:
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+          repository: cloud-development-team/cloudrnd-experimental-test
+          ref: main
+          fetch-depth: 0
 
-  #     - name: Semantic Version
-  #       id: version
-  #       uses: paulhatch/semantic-version@v5.3.0
-  #       with:
-  #         major_pattern: "(MAJOR)"
-  #         minor_pattern: "(MINOR)"
-  #         tag_prefix: KDOG_ #"${{ inputs.jira_key }}_"
-  #         version_format: KDOG_${major}.${minor}.${patch} #"${{ inputs.jira_key }}_${major}.${minor}.${patch}"
-  #         change_path: "."
-  #         bump_each_commit: false
-  #         search_commit_body: true
+      - name: Semantic Version
+        id: version
+        uses: paulhatch/semantic-version@v5.3.0
+        with:
+          major_pattern: "(MAJOR)"
+          minor_pattern: "(MINOR)"
+          tag_prefix: KDOG_ #"${{ inputs.jira_key }}_"
+          version_format: KDOG_${major}.${minor}.${patch} #"${{ inputs.jira_key }}_${major}.${minor}.${patch}"
+          change_path: "."
+          bump_each_commit: false
+          search_commit_body: true
 
-  # create-release:
-  #   name: Create tag for new image
-  #   needs: [versioning]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-  #         repository: cloud-development-team/cloudrnd-experimental-test
-  #         ref: refs/heads/main
-  #         token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+  create-release:
+    name: Create tag for new image
+    needs: [versioning]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/cloudrnd-experimental-test
+          ref: refs/heads/main
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
-  #     # - name: Build Release Changelog
-  #     #   id: release_changelog
-  #     #   uses: mikepenz/release-changelog-builder-action@v4
-  #     #   env:
-  #     #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Build Release Changelog
+      #   id: release_changelog
+      #   uses: mikepenz/release-changelog-builder-action@v4
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Create Release
-  #       uses: actions/create-release@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-  #       with:
-  #         tag_name: ${{ needs.versioning.outputs.version }}
-  #         release_name: ${{ needs.versioning.outputs.version }}
-  #         repo: cloudrnd-experimental-test
-  #         # body: ${{ steps.release_changelog.outputs.changelog }}
-  #         body: |
-  #           This release was created by ${{ github.event.sender.login }}.
-  #           - More information about this release can be found in Jira Release.
-  #           - Jira Release should have a release like this version. If the same version is not there, contact DevOps.
-  #           - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+        with:
+          tag_name: ${{ needs.versioning.outputs.version }}
+          release_name: ${{ needs.versioning.outputs.version }}
+          repo: cloudrnd-experimental-test
+          # body: ${{ steps.release_changelog.outputs.changelog }}
+          body: |
+            This release was created by ${{ github.event.sender.login }}.
+            - More information about this release can be found in Jira Release.
+            - Jira Release should have a release like this version. If the same version is not there, contact DevOps.
+            - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
