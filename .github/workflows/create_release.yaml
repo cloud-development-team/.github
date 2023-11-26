@@ -26,11 +26,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4      
         with:
-          repository: 'cloud-development-team/cloudrnd-experimental-test'
-          path: ''
-          ref: main
           token: ${{ secrets.GH_PAT_JWJUNG }}
+          repository: https://github.com/cloud-development-team/cloudrnd-experimental-test.git
+          ref: main 
           fetch-depth: 0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT_JWJUNG }}
 
       - name: Semantic Version
         id: version
