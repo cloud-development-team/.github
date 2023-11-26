@@ -12,7 +12,11 @@ on:
         - CPD
         - IS360
         - KDOG
-    
+    secrets:
+      GH_PAT_AUTOMATION:
+        required: true
+
+
 jobs:
   versioning:
     outputs:
@@ -26,12 +30,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4      
         with:
-          token: ${{ secrets.GH_PAT_JWJUNG }}
+          token: ${{ secrets.GH_PAT_AUTOMATION }}
           repository: cloud-development-team/cloudrnd-experimental-test
           ref: main
           fetch-depth: 0
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT_JWJUNG }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT_AUTOMATION }}
 
       - name: Semantic Version
         id: version
@@ -56,7 +60,7 @@ jobs:
           fetch-depth: 0
           repository: cloud-development-team/cloudrnd-experimental-test
           ref: refs/heads/main
-          token: ${{ secrets.GH_PAT_JWJUNG }}
+          token: ${{ secrets.GH_PAT_AUTOMATION }}
 
       # - name: Build Release Changelog
       #   id: release_changelog
@@ -67,7 +71,7 @@ jobs:
       - name: Create Release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT_JWJUNG }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT_AUTOMATION }}
         with:
           tag_name: ${{ needs.versioning.outputs.version }}
           release_name: ${{ needs.versioning.outputs.version }}
