@@ -1,18 +1,17 @@
 name: Create Release Test
 
 on:
-  push:
-  # workflow_dispatch:
-  #   inputs:
-  #     jira_key:
-  #       description: 'Jira Key'
-  #       required: true
-  #       default: 'KDOG'
-  #       type: choice
-  #       options:
-  #       - CPD
-  #       - IS360
-  #       - KDOG
+  workflow_dispatch:
+    inputs:
+      jira_key:
+        description: 'Jira Key'
+        required: true
+        default: 'KDOG'
+        type: choice
+        options:
+        - CPD
+        - IS360
+        - KDOG
 
 jobs:
   versioning:
@@ -39,8 +38,8 @@ jobs:
         with:
           major_pattern: "(MAJOR)"
           minor_pattern: "(MINOR)"
-          tag_prefix: KDOG_ #"${{ inputs.jira_key }}_"
-          version_format: KDOG_${major}.${minor}.${patch} #"${{ inputs.jira_key }}_${major}.${minor}.${patch}"
+          tag_prefix: "${{ inputs.jira_key }}_"
+          version_format: "${{ inputs.jira_key }}_${major}.${minor}.${patch}"
           change_path: "."
           bump_each_commit: false
           search_commit_body: true
