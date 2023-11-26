@@ -27,8 +27,8 @@ jobs:
         uses: actions/checkout@v4      
         with:
           token: ${{ secrets.GH_PAT_JWJUNG }}
-          repository: https://github.com/cloud-development-team/cloudrnd-experimental-test.git
-          ref: main 
+          repository: cloud-development-team/cloudrnd-experimental-test
+          ref: main
           fetch-depth: 0
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT_JWJUNG }}
