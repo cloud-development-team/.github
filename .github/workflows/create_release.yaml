@@ -70,7 +70,7 @@ jobs:
         with:
           tag_name: ${{ needs.versioning.outputs.version }}
           release_name: ${{ needs.versioning.outputs.version }}
-          repo: cloudrnd-experimental-test
+          repo: cloud-development-team/cloudrnd-experimental-test
           # body: ${{ steps.release_changelog.outputs.changelog }}
           body: |
             This release was created by ${{ github.event.sender.login }}.
