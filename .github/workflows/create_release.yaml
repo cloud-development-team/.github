@@ -27,12 +27,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4      
         with:
-          token: ${{ secrets.GH_PAT_AUTOMATION }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
           repository: cloud-development-team/cloudrnd-experimental-test
           ref: main
           fetch-depth: 0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT_AUTOMATION }}
 
       - name: Semantic Version
         id: version
@@ -57,7 +55,7 @@ jobs:
           fetch-depth: 0
           repository: cloud-development-team/cloudrnd-experimental-test
           ref: refs/heads/main
-          token: ${{ secrets.GH_PAT_AUTOMATION }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       # - name: Build Release Changelog
       #   id: release_changelog
@@ -68,7 +66,7 @@ jobs:
       - name: Create Release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT_AUTOMATION }}
+          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
         with:
           tag_name: ${{ needs.versioning.outputs.version }}
           release_name: ${{ needs.versioning.outputs.version }}
