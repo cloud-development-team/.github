@@ -110,4 +110,4 @@ jobs:
       - name: Github Release Result
         run: |
           echo "🔍 Check the release results"
-          echo "- [Github Release Link](https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ needs.versioning.outputs.version }})"
+          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ needs.versioning.outputs.version }}"
