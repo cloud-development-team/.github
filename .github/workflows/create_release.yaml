@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       jira_key:
-        description: 'Jira Key'
+        description: 'Jira Project Key'
         required: true
         default: 'KDOG'
         type: choice
@@ -17,18 +17,44 @@ jobs:
   versioning:
     outputs:
       version: ${{ steps.version.outputs.version }}
+      repo: ${{ steps.set_env.outputs.repo }}
+      version_base_repo: ${{ steps.set_env.outputs.version_base_repo }}
     name: Versioning
     runs-on: ubuntu-latest
     steps:
-      - name: test
+      - name: Repository List
+        id: set_env
         run: |
-          echo "${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}"
+          jq --version
+          if [ ${{ inputs.jira_key }}  == "CPD" ]; then
+            repo=("dmpro-gitops-prod")
+            repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
+            version_base_repo=dmpro-gitops-prod
+          elif [ ${{ inputs.jira_key }}  == "IS360" ]; then
+            repo=("sightmind-backend-mono" "hc-frontend-mono")
+            repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
+            version_base_repo=sightmind-backend-mono
+          elif [ ${{ inputs.jira_key }} == "KDOG" ]; then
+            repo=("cloudrnd-experimental-test" "sightmind-backend-mono")
+            repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
+            version_base_repo=cloudrnd-experimental-test
+          else
+            repo=("test_fail")
+            repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
+            version_base_repo=TEST_FAIL
+          fi
+
+          echo $repo
+          echo $version_base_repo
+
+          echo "repo=$repo" >> $GITHUB_OUTPUT
+          echo "version_base_repo=$version_base_repo" >> $GITHUB_OUTPUT
 
       - name: Checkout
         uses: actions/checkout@v4      
         with:
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-          repository: cloud-development-team/cloudrnd-experimental-test
+          repository: cloud-development-team/${{ steps.set_env.outputs.version_base_repo }}
           ref: main
           fetch-depth: 0
 
@@ -43,17 +69,20 @@ jobs:
           change_path: "."
           bump_each_commit: false
           search_commit_body: true
-
+          
   create-release:
     name: Create tag for new image
     needs: [versioning]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repo:  ${{fromJson(needs.versioning.outputs.repo)}}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          repository: cloud-development-team/cloudrnd-experimental-test
+          repository: cloud-development-team/${{ matrix.repo }}
           ref: refs/heads/main
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
@@ -63,18 +92,22 @@ jobs:
       #   env:
       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Release
+      - name: Create Github Release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
         with:
           tag_name: ${{ needs.versioning.outputs.version }}
           release_name: ${{ needs.versioning.outputs.version }}
-          repo: cloudrnd-experimental-test
+          repo: ${{ matrix.repo }}
           commitish: main
-          # body: ${{ steps.release_changelog.outputs.changelog }}
           body: |
-            This release was created by ${{ github.event.sender.login }}.
-            - More information about this release can be found in Jira Release.
-            - Jira Release should have a release like this version. If the same version is not there, contact DevOps.
+            🤖 This release was created by ${{ github.event.sender.login }}.
+            - More information about this release can be found in Jira Release. 🔍
+            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
+
+      - name: Github Release Result
+        run: |
+          echo "🔍 Check the release results"
+          echo "- [Github Release Link](https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ needs.versioning.outputs.version }})"
