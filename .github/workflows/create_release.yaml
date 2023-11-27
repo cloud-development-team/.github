@@ -70,10 +70,25 @@ jobs:
         with:
           tag_name: ${{ needs.versioning.outputs.version }}
           release_name: ${{ needs.versioning.outputs.version }}
-          repo: cloud-development-team/cloudrnd-experimental-test
+          repo: cloudrnd-experimental-test
+          commitish: main
           # body: ${{ steps.release_changelog.outputs.changelog }}
           body: |
             This release was created by ${{ github.event.sender.login }}.
             - More information about this release can be found in Jira Release.
             - Jira Release should have a release like this version. If the same version is not there, contact DevOps.
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
+      
+      # - name: Create Release
+      #   uses: softprops/action-gh-release@v1
+      #   if: startsWith(github.ref, 'refs/tags/')
+      #   with:
+      #     tag_name: ${{ needs.versioning.outputs.version }}
+      #     name: ${{ needs.versioning.outputs.version }}
+      #     repo: cloud-development-team/cloudrnd-experimental-test
+      #     body: |
+      #       This release was created by ${{ github.event.sender.login }}.
+      #       - More information about this release can be found in Jira Release.
+      #       - Jira Release should have a release like this version. If the same version is not there, contact DevOps.
+      #       - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
+            
