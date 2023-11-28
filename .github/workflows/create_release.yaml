@@ -12,6 +12,15 @@ on:
         - CPD
         - IS360
         - KDOG
+      release_type:
+        description: 'Release Type in Sementic Version'
+        required: true
+        default: 'Patch'
+        type: choice
+        options:
+        - PATCH
+        - MINOR
+        - MAJOR        
 
 jobs:
   versioning:
@@ -58,6 +67,18 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Commit for Minor or Major Version
+        if: ${{ (inputs.release_type == 'MINOR' || inputs.release_type == 'MAJOR') }}
+        id: commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+        run: |
+          git config user.name "HVC-Automation" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit --amend -m 'feat: release (${{ inputs.release_type }}) by ${{ github.event.sender.login }}'
+        continue-on-error: false
+
       - name: Semantic Version
         id: version
         uses: paulhatch/semantic-version@v5.3.0
@@ -85,12 +106,6 @@ jobs:
           repository: cloud-development-team/${{ matrix.repo }}
           ref: refs/heads/main
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-
-      # - name: Build Release Changelog
-      #   id: release_changelog
-      #   uses: mikepenz/release-changelog-builder-action@v4
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Github Release
         uses: actions/create-release@v1
