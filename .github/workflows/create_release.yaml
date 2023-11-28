@@ -1,5 +1,7 @@
 name: Create Github Release
 
+run-name: ${{ github.event.sender.login }} Executes This Release Action
+
 on:
   workflow_dispatch:
     inputs:
