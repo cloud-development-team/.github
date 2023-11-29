@@ -1,6 +1,6 @@
 name: Create Github Release
 
-run-name: ${{ github.event.sender.login }} executes 'create_release' action
+run-name: ${{ github.event.sender.login }} executes 'create_release' action for ${{ inputs.jira_key }}
 
 on:
   workflow_dispatch:
@@ -36,7 +36,6 @@ jobs:
       - name: Repository List
         id: set_env
         run: |
-          jq --version
           if [ ${{ inputs.jira_key }}  == "CPD" ]; then
             repo=("dmpro-gitops-prod")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
@@ -46,7 +45,7 @@ jobs:
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
             version_base_repo=sightmind-backend-mono
           elif [ ${{ inputs.jira_key }} == "KDOG" ]; then
-            repo=("cloudrnd-experimental-test" "sightmind-backend-mono")
+            repo=("cloudrnd-experimental-test" "cloudrnd-infra-terraform")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
             version_base_repo=cloudrnd-experimental-test
           else
