@@ -9,28 +9,24 @@ on:
         description: 'Jira Project Key'
         required: true
         default: 'KDOG'
-        type: choice
-        options:
-        - CPD
-        - IS360
-        - KDOG
-      release_type:
-        description: 'Release Type in Sementic Version'
+        type: string
+      release_version:
+        description: 'Release Version'
         required: true
-        default: 'Patch'
-        type: choice
-        options:
-        - PATCH
-        - MINOR
-        - MAJOR        
+        default: ""
+        type: string     
+      release_description:
+        description: 'Release Description'
+        required: true
+        default: ""
+        type: string          
 
 jobs:
-  versioning:
+  initial_setting:
     outputs:
-      version: ${{ steps.version.outputs.version }}
       repo: ${{ steps.set_env.outputs.repo }}
-      version_base_repo: ${{ steps.set_env.outputs.version_base_repo }}
-    name: Versioning
+      release_branch: ${{ steps.set_env.outputs.release_branch }}
+    name: Initial Setting
     runs-on: ubuntu-latest
     steps:
       - name: Repository List
@@ -39,73 +35,35 @@ jobs:
           if [ ${{ inputs.jira_key }}  == "CPD" ]; then
             repo=("dmpro-gitops-prod")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
-            version_base_repo=dmpro-gitops-prod
+            release_branch=main
           elif [ ${{ inputs.jira_key }}  == "IS360" ]; then
             repo=("sightmind-backend-mono" "hc-frontend-mono")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
-            version_base_repo=sightmind-backend-mono
+            release_branch=production
           elif [ ${{ inputs.jira_key }} == "KDOG" ]; then
             repo=("cloudrnd-experimental-test" "cloudrnd-infra-terraform")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
-            version_base_repo=cloudrnd-experimental-test
-          else
-            repo=("test_fail")
-            repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
-            version_base_repo=TEST_FAIL
+            release_branch=main
           fi
-
-          echo $repo
-          echo $version_base_repo
-
+          
+          echo "Repository  : $REPO\nBranch      : $REPO1"
           echo "repo=$repo" >> $GITHUB_OUTPUT
-          echo "version_base_repo=$version_base_repo" >> $GITHUB_OUTPUT
-
-      - name: Checkout
-        uses: actions/checkout@v4      
-        with:
-          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-          repository: cloud-development-team/${{ steps.set_env.outputs.version_base_repo }}
-          ref: main
-          fetch-depth: 0
-
-      - name: Commit for Minor or Major Version
-        if: ${{ (inputs.release_type == 'MINOR' || inputs.release_type == 'MAJOR') }}
-        id: commit
-        env:
-          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-        run: |
-          git config user.name "HVC-Automation" && \
-          git config user.email "<>" && \
-          git add --all
-          git commit --amend -m 'feat: release (${{ inputs.release_type }}) by ${{ github.event.sender.login }}'
-        continue-on-error: false
-
-      - name: Semantic Version
-        id: version
-        uses: paulhatch/semantic-version@v5.3.0
-        with:
-          major_pattern: "(MAJOR)"
-          minor_pattern: "(MINOR)"
-          tag_prefix: "${{ inputs.jira_key }}_"
-          version_format: "${{ inputs.jira_key }}_${major}.${minor}.${patch}"
-          change_path: "."
-          bump_each_commit: false
-          search_commit_body: true
+          echo "release_branch=$release_branch" >> $GITHUB_OUTPUT
           
   create-release:
     name: Create tag for new image
-    needs: [versioning]
+    needs: [initial_setting]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        repo:  ${{fromJson(needs.versioning.outputs.repo)}}
+        repo:  ${{fromJson(needs.initial_setting.outputs.repo)}}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           repository: cloud-development-team/${{ matrix.repo }}
-          ref: refs/heads/main
+          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Create Github Release
@@ -113,17 +71,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
         with:
-          tag_name: ${{ needs.versioning.outputs.version }}
-          release_name: ${{ needs.versioning.outputs.version }}
+          tag_name: ${{ inputs.release_version }}
+          release_name: ${{ inputs.release_version }}
           repo: ${{ matrix.repo }}
-          commitish: main
+          commitish: ${{ needs.initial_setting.outputs.release_branch }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
             - More information about this release can be found in Jira Release. 🔍
             - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
 
+            ## Description
+            ${{ inputs.release_description }}
+
       - name: Github Release Result
         run: |
           echo "🔍 Check the release results"
-          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ needs.versioning.outputs.version }}"
+          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}"
