@@ -14,12 +14,7 @@ on:
         description: 'Release Version'
         required: true
         default: ""
-        type: string     
-      release_description:
-        description: 'Release Description'
-        required: true
-        default: ""
-        type: string          
+        type: string      
 
 jobs:
   initial_setting:
@@ -80,9 +75,6 @@ jobs:
             - More information about this release can be found in Jira Release. 🔍
             - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
-
-            ## Description
-            ${{ inputs.release_description }}
 
       - name: Github Release Result
         run: |
