@@ -1,0 +1,34 @@
+name: Manual Teams Notification
+
+on:
+  workflow_dispatch:
+    inputs:
+      custom_actions:
+        required: false
+        description: "add custom actions to notification message (check https://github.com/toko-bifrost/ms-teams-deploy-card/tree/master/#usage)"
+        type: string
+        default: |
+          - text: Your CodeDeploy deployment is complete.
+      WEBHOOK_URI:
+        required: true
+        description: "uri of webhook"
+        type: string
+        default: "https://hanwhaworkplace.webhook.office.com/webhookb2/a809bbe5-2986-42f2-91e6-f75018bf1f2d@a18df353-df3a-46ef-bcc3-dc9a818a4df8/IncomingWebhook/ab59e0989bcc4772841319ff4cf62dab/b7bcf613-5364-40f4-ab60-1e9113c319df"
+
+
+
+jobs:
+  notification:
+    name: Notification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: toko-bifrost/ms-teams-deploy-card@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          webhook-uri: ${{ inputs.WEBHOOK_URI }}
+          card-layout-start: compact
+          show-on-start: true
+          show-on-exit: false
+          enable-view-status: false
+          custom-actions: |
+            ${{ inputs.custom_actions }}
