@@ -40,6 +40,7 @@ on:
         required: true
         description: "Name of role after config aws credentials"
         type: string
+        default: "arn:aws:iam::184738677759:role/GitHubActionTest"
       environment:
         required: false
         description: "Environment name for tagging"
@@ -51,10 +52,6 @@ on:
       GH_MANAGEPACKAGE_TOKEN:
         required: true
       CODEFREEZE:
-        required: true
-      AWS_ACCESS_KEY_ID:
-        required: true
-      AWS_SECRET_ACCESS_KEY:
         required: true
       PRIVATE_NPM_TOKEN:
         required: false
@@ -101,12 +98,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Configure AWS credentials
+      - name: Configure AWS Credentials to Admin Role
+        id: creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+          role-session-name: githubactions
+          output-credentials: true
+
+      - name: Configure AWS Credentials to ado016-prod role
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ inputs.ecr_region }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ steps.creds.outputs.aws-access-key-id }}
+          aws-secret-access-key: ${{ steps.creds.outputs.aws-secret-access-key }}
+          aws-session-token: ${{ steps.creds.outputs.aws-session-token }}
           role-to-assume: ${{ inputs.role_to_assume }}
 
       - name: Login to Amazon ECR
