@@ -29,6 +29,9 @@ on:
         required: false
         type: string
         default: 'development'
+      STREAM:
+        required: false
+        type: string
 
 jobs:
   coverity:
@@ -81,12 +84,19 @@ jobs:
         run: |
           echo "CI_STEP_StaticAnalysis"
 
-          #추후 저장소명, 브랜치명 변경시 확인 필요
-          if [ "${{ inputs.REPO_NAME }}" = "hc-frontend-mono" ] ; then
-            STREAM="sightmind-${{ inputs.REPO_NAME }}"
+          # if [ "${{ inputs.REPO_NAME }}" = "hc-frontend-mono" ] ; then
+          #   STREAM="sightmind-${{ inputs.REPO_NAME }}"
+          # else
+          #   STREAM="${{ inputs.REPO_NAME }}"
+          # fi
+
+          if [ "${{ inputs.STREAM }}" != "" ] ; then
+            STREAM="${{ inputs.STREAM }}"
           else
             STREAM="${{ inputs.REPO_NAME }}"
           fi
+
+          echo $STREAM
 
           CSA_DIR=/home/jenkins/cov-analysis
           COVERITY_CONFIG=${GITHUB_WORKSPACE}/coverity_config
