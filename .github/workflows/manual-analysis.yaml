@@ -1,6 +1,5 @@
 name: Manual Analysis
 
-
 run-name: 'manual-analysis'
 
 on:
