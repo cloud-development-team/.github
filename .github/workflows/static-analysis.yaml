@@ -29,6 +29,9 @@ on:
         required: false
         type: string
         default: 'development'
+      STREAM:
+        required: false
+        type: string
 
 jobs:
   coverity:
@@ -46,8 +49,8 @@ jobs:
         image: ghcr.io/hanwhavision/coverity-github:1.0.0
         options: --user root
         credentials:
-           username: jenkins
-           password: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          username: jenkins
+          password: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
     steps:
       - name: Greeting
@@ -81,12 +84,13 @@ jobs:
         run: |
           echo "CI_STEP_StaticAnalysis"
 
-          #추후 저장소명, 브랜치명 변경시 확인 필요
-          if [ "${{ inputs.REPO_NAME }}" = "hc-frontend-mono" ] ; then
-            STREAM="sightmind-${{ inputs.REPO_NAME }}"
+          if [ "${{ inputs.STREAM }}" != "" ] ; then
+            STREAM="${{ inputs.STREAM }}"
           else
             STREAM="${{ inputs.REPO_NAME }}"
           fi
+
+          echo "STREAM is $STREAM"
 
           CSA_DIR=/home/jenkins/cov-analysis
           COVERITY_CONFIG=${GITHUB_WORKSPACE}/coverity_config
@@ -104,7 +108,7 @@ jobs:
           ${CSA_DIR}/bin/cov-build --config ${COVERITY_CONFIG_XML} --dir ${COVERITY_INTERMEDIATE} -fs-capture-search ${GITHUB_WORKSPACE}/${{ env.BUILD_PATH }} --no-command
           ${CSA_DIR}/bin/cov-analyze --aggressiveness-level high --all --dir ${COVERITY_INTERMEDIATE} --wait-for-license
           cov_commit="${CSA_DIR}/bin/cov-commit-defects --url https://${CIM_USER}:${CIM_PASSWD}@${{ inputs.CIM_SERVER }} --ssl --stream ${STREAM} --dir ${COVERITY_INTERMEDIATE} --version ${APP_REVISION}";
-          max_try_count=10;
+          max_try_count=5;
           while ! ${cov_commit} && [ $max_try_count -ne 0 ]; do
               echo "Remaining  try-count : ${max_try_count}";
               max_try_count=$((max_try_count-1)); 
