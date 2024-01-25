@@ -1,6 +1,6 @@
 name: source code quality check
 
-run-name:  Sightmind R${{ github.run_number }} with branch ${{ github.ref_name }} 🚀
+run-name: R${{ github.run_number }} with branch ${{ inputs.BRANCH }} 🚀
 
 on:
   workflow_call:
