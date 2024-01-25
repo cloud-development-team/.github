@@ -49,8 +49,8 @@ jobs:
         image: ghcr.io/hanwhavision/coverity-github:1.0.0
         options: --user root
         credentials:
-           username: jenkins
-           password: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          username: jenkins
+          password: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
     steps:
       - name: Greeting
@@ -84,19 +84,13 @@ jobs:
         run: |
           echo "CI_STEP_StaticAnalysis"
 
-          # if [ "${{ inputs.REPO_NAME }}" = "hc-frontend-mono" ] ; then
-          #   STREAM="sightmind-${{ inputs.REPO_NAME }}"
-          # else
-          #   STREAM="${{ inputs.REPO_NAME }}"
-          # fi
-
           if [ "${{ inputs.STREAM }}" != "" ] ; then
             STREAM="${{ inputs.STREAM }}"
           else
             STREAM="${{ inputs.REPO_NAME }}"
           fi
 
-          echo $STREAM
+          echo "STREAM is $STREAM"
 
           CSA_DIR=/home/jenkins/cov-analysis
           COVERITY_CONFIG=${GITHUB_WORKSPACE}/coverity_config
