@@ -1,7 +1,7 @@
 name: Manual Analysis
 
 
-run-name: 'manual-analysis' action for ${{ inputs.REPO_NAME }}
+run-name: 'manual-analysis'
 
 on:
   workflow_dispatch:
