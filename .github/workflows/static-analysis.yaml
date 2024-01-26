@@ -32,6 +32,16 @@ on:
       STREAM:
         required: false
         type: string
+      DISPATCH:
+        description: 'DISPATCH TRUE'
+        required: false
+        type: boolean
+        default: false
+      BRANCH:
+        description: 'Target Branch'
+        required: true
+        type: string
+        default: 'release'
 
 jobs:
   coverity:
@@ -65,10 +75,21 @@ jobs:
           QUALITY_REPORT: ${{ inputs.QUALITY_REPORT }}
 
       - name: Checkout
+        if: inputs.DISPATCH == false
         uses: actions/checkout@v3
         with:       
           path: ./${{ inputs.REPO_NAME }}
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          fetch-depth: 0
+
+      - name: Checkout-dispatch
+        if: inputs.DISPATCH == true
+        uses: actions/checkout@v4
+        with:
+          repository: cloud-development-team/${{ inputs.REPO_NAME }}
+          ref: refs/heads/${{ inputs.BRANCH }}
+          path: ./${{ inputs.REPO_NAME }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
           fetch-depth: 0
 
       - uses: chrnorm/deployment-action@v2
