@@ -60,7 +60,7 @@ jobs:
         options: --user root
         credentials:
           username: jenkins
-          password: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          password: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
     steps:
       - name: Greeting
@@ -79,7 +79,7 @@ jobs:
         uses: actions/checkout@v3
         with:       
           path: ./${{ inputs.REPO_NAME }}
-          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
           fetch-depth: 0
 
       - name: Checkout-dispatch
