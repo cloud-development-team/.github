@@ -44,9 +44,9 @@ on:
         default: 'release'
     secrets:
       GH_MANAGEPACKAGE_TOKEN:
-        required: false
+        required: true
       AUTOMATION_GH_MANAGEPACKAGE_TOKEN:
-        required: false
+        required: true
 
 
 
