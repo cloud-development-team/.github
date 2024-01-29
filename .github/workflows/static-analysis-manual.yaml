@@ -26,8 +26,8 @@ on:
           - global-rule-engine
           - sightmind-backend-mono
           - sightmind-hc-frontend-mono
-      BUILD_PATH:
-        description: 'Build target path'
+      ANALYSIS_PATH:
+        description: 'Target Path'
         required: true
         type: string
         default: '.'
@@ -73,7 +73,7 @@ jobs:
           elif [ ${{inputs.STREAM}}  == "sightmind-hc-frontend-mono" ]; then
             REPO_NAME=hc-frontend-mono
           else
-            REPO_NAME = ${{inputs.STREAM}}
+            REPO_NAME=${{inputs.STREAM}}
           fi
 
           echo "REPO_NAME=$REPO_NAME" >> $GITHUB_OUTPUT
@@ -83,9 +83,10 @@ jobs:
     name: Analysis code quality
     uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
     needs: [initial-tasks]
+    environment: ${{ github.ref_name }}
     with:
       REPO_NAME: ${{ needs.initial-tasks.outputs.REPO_NAME }}
-      BUILD_PATH: ${{ inputs.BUILD_PATH }}
+      ANALYSIS_PATH: ${{ inputs.ANALYSIS_PATH }}
       QUALITY_REPORT: ${{ inputs.QUALITY_REPORT }}
       DISPATCH: true
       BRANCH: ${{ inputs.BRANCH }}
