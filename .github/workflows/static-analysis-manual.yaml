@@ -73,7 +73,7 @@ jobs:
           elif [ ${{inputs.STREAM}}  == "sightmind-hc-frontend-mono" ]; then
             REPO_NAME=hc-frontend-mono
           else
-            REPO_NAME = ${{inputs.STREAM}}
+            REPO_NAME=${{inputs.STREAM}}
           fi
 
           echo "REPO_NAME=$REPO_NAME" >> $GITHUB_OUTPUT
