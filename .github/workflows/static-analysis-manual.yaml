@@ -69,7 +69,7 @@ jobs:
             
   static-analysis:
     name: Analysis code quality
-    uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@KDOG-694-pass-secret
+    uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
     needs: [initial-tasks]
     with:
       REPO_NAME: ${{ needs.initial-tasks.outputs.REPO_NAME }}
@@ -78,25 +78,7 @@ jobs:
       DISPATCH: true
       BRANCH: ${{ inputs.BRANCH }}
       STREAM: ${{ inputs.STREAM }}
-      environment: main # ${{ github.ref_name }}
+      environment: ${{ github.ref_name }}
     secrets:
       GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
       AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-
-  # deploy_kdog:
-  #   name: ENV KDOG
-  #   uses: cloud-development-team/.github/.github/workflows/test.yaml@KDOG-694-pass-secret
-  #   with:
-  #     environment: ${{ github.ref_name }}
-  #   secrets:
-  #     GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN}}
-
-      
-  # deploy_main:
-  #   name: ENV main
-  #   needs: deploy_kdog
-  #   uses: cloud-development-team/.github/.github/workflows/test.yaml@KDOG-694-pass-secret
-  #   with:
-  #     environment: main
-  #   secrets:
-  #     GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN}}
