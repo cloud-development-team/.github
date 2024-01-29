@@ -55,8 +55,6 @@ jobs:
     name: Quality Check
     
     runs-on: ubuntu-latest
-    
-    environment: main # ${{ github.ref_name }}
 
     permissions:
       deployments: write
