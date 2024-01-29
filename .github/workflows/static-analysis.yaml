@@ -42,6 +42,13 @@ on:
         required: true
         type: string
         default: 'release'
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN:
+        required: false
+      AUTOMATION_GH_MANAGEPACKAGE_TOKEN:
+        required: false
+
+
 
 jobs:
   coverity:
@@ -49,6 +56,8 @@ jobs:
     
     runs-on: ubuntu-latest
     
+    environment: main # ${{ github.ref_name }}
+
     permissions:
       deployments: write
     
