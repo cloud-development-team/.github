@@ -43,29 +43,29 @@ on:
         default: true
 
 jobs:
-  initial-tasks: 
-    name: Initial tasks
-    runs-on: ubuntu-latest
-    outputs:
-      REPO_NAME: ${{ steps.set_env.outputs.REPO_NAME }}
-      GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN}}
-      AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN}}
-    steps:
-      - name: Set STREAM Env
-        id: set_env
-        run: |
-          if [ ${{inputs.STREAM}}  == "dmpro-hc-frontend-mono" ]; then
-            REPO_NAME=hc-frontend-mono
-          elif [ ${{inputs.STREAM}}  == "global-rule-engine" ]; then
-            REPO_NAME=cloudrnd-rule-engine
-          elif [ ${{inputs.STREAM}}  == "sightmind-hc-frontend-mono" ]; then
-            REPO_NAME=hc-frontend-mono
-          else
-            REPO_NAME=${{inputs.STREAM}}
-          fi
+  # initial-tasks: 
+  #   name: Initial tasks
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     REPO_NAME: ${{ steps.set_env.outputs.REPO_NAME }}
+  #     GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN}}
+  #     AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN}}
+  #   steps:
+  #     - name: Set STREAM Env
+  #       id: set_env
+  #       run: |
+  #         if [ ${{inputs.STREAM}}  == "dmpro-hc-frontend-mono" ]; then
+  #           REPO_NAME=hc-frontend-mono
+  #         elif [ ${{inputs.STREAM}}  == "global-rule-engine" ]; then
+  #           REPO_NAME=cloudrnd-rule-engine
+  #         elif [ ${{inputs.STREAM}}  == "sightmind-hc-frontend-mono" ]; then
+  #           REPO_NAME=hc-frontend-mono
+  #         else
+  #           REPO_NAME=${{inputs.STREAM}}
+  #         fi
 
-          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_OUTPUT
-          echo $REPO_NAME
+  #         echo "REPO_NAME=$REPO_NAME" >> $GITHUB_OUTPUT
+  #         echo $REPO_NAME
             
   # static-analysis:
   #   name: Analysis code quality
@@ -84,11 +84,18 @@ jobs:
 
   deploy_kdog:
     name: ENV KDOG
-    environment: ${{ github.ref_name }}
     uses: cloud-development-team/.github/.github/workflows/test.yaml@KDOG-694-pass-secret
+    with:
+      environment: ${{ github.ref_name }}
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN}}
+
       
   deploy_main:
     name: ENV main
     needs: deploy_dev
-    environment: main
     uses: cloud-development-team/.github/.github/workflows/test.yaml@KDOG-694-pass-secret
+    with:
+      environment: main
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN}}

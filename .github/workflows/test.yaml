@@ -8,7 +8,7 @@ on:
         description: environment to deploy to
         required: true
     secrets:
-      PASSWORD:
+      GH_MANAGEPACKAGE_TOKEN:
         required: true
 
 jobs:
@@ -18,7 +18,7 @@ jobs:
     environment: ${{ inputs.environment }}
     
     steps:
-    - name: Dump Password
+    - name: Dump env
       run: |
         echo GH_MANAGEPACKAGE_TOKEN is $GH_MANAGEPACKAGE_TOKEN
         if [[ $GH_MANAGEPACKAGE_TOKEN == *"123"* ]]; then
