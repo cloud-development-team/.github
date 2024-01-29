@@ -81,7 +81,7 @@ jobs:
             
   static-analysis:
     name: Analysis code quality
-    uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@KDOG-694-coverity-dispatch
+    uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
     needs: [initial-tasks]
     environment: ${{ github.ref_name }}
     with:
