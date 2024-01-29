@@ -42,6 +42,10 @@ on:
         required: true
         type: string
         default: 'release'
+      environment:
+        type: string
+        description: environment for env_secret
+        required: true
     secrets:
       GH_MANAGEPACKAGE_TOKEN:
         required: true
@@ -55,6 +59,8 @@ jobs:
     name: Quality Check
     
     runs-on: ubuntu-latest
+
+    environment: ${{ inputs.environment }}
 
     permissions:
       deployments: write
