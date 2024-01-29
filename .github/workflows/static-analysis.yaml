@@ -15,8 +15,8 @@ on:
         required: true
         type: string
         default: 'sightmind-backend-mono'
-      BUILD_PATH:
-        description: 'Build target path under repository'
+      ANALYSIS_PATH:
+        description: 'Target Path under repository'
         required: true
         type: string
         default: '.'
@@ -53,7 +53,7 @@ jobs:
       deployments: write
     
     env:
-      BUILD_PATH: ./${{ inputs.REPO_NAME }}/${{ inputs.BUILD_PATH }}
+      ANALYSIS_PATH: ./${{ inputs.REPO_NAME }}/${{ inputs.ANALYSIS_PATH }}
     
     container:
         image: ghcr.io/hanwhavision/coverity-github:1.0.0
@@ -101,7 +101,7 @@ jobs:
 
       - name: coverity
         if: inputs.QUALITY_REPORT == true
-        working-directory: ${{ env.BUILD_PATH }}
+        working-directory: ${{ env.ANALYSIS_PATH }}
         run: |
           echo "CI_STEP_StaticAnalysis"
 
@@ -126,7 +126,7 @@ jobs:
           ${CSA_DIR}/bin/cov-configure --config ${COVERITY_CONFIG_XML} --typescript
           
           APP_REVISION=`git rev-parse --short HEAD`;
-          ${CSA_DIR}/bin/cov-build --config ${COVERITY_CONFIG_XML} --dir ${COVERITY_INTERMEDIATE} -fs-capture-search ${GITHUB_WORKSPACE}/${{ env.BUILD_PATH }} --no-command
+          ${CSA_DIR}/bin/cov-build --config ${COVERITY_CONFIG_XML} --dir ${COVERITY_INTERMEDIATE} -fs-capture-search ${GITHUB_WORKSPACE}/${{ env.ANALYSIS_PATH }} --no-command
           ${CSA_DIR}/bin/cov-analyze --aggressiveness-level high --all --dir ${COVERITY_INTERMEDIATE} --wait-for-license
           cov_commit="${CSA_DIR}/bin/cov-commit-defects --url https://${CIM_USER}:${CIM_PASSWD}@${{ inputs.CIM_SERVER }} --ssl --stream ${STREAM} --dir ${COVERITY_INTERMEDIATE} --version ${APP_REVISION}";
           max_try_count=5;
