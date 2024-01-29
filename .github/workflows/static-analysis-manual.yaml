@@ -93,7 +93,7 @@ jobs:
       
   deploy_main:
     name: ENV main
-    needs: deploy_dev
+    needs: deploy_kdog
     uses: cloud-development-team/.github/.github/workflows/test.yaml@KDOG-694-pass-secret
     with:
       environment: main
