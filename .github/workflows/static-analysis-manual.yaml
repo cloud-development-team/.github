@@ -46,9 +46,10 @@ jobs:
   initial-tasks: 
     name: Initial tasks
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name }}
     outputs:
       REPO_NAME: ${{ steps.set_env.outputs.REPO_NAME }}
+      GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN}}
+      AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN}}
     steps:
       - name: Set STREAM Env
         id: set_env
@@ -67,17 +68,17 @@ jobs:
           echo $REPO_NAME
             
   static-analysis:
-    runs-on: ubuntu-latest
     name: Analysis code quality
+    uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
     needs: [initial-tasks]
-    environment: ${{ github.ref_name }}
-    steps:
-    - uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
-      with:
-        REPO_NAME: ${{ needs.initial-tasks.outputs.REPO_NAME }}
-        ANALYSIS_PATH: ${{ inputs.ANALYSIS_PATH }}
-        QUALITY_REPORT: ${{ inputs.QUALITY_REPORT }}
-        DISPATCH: true
-        BRANCH: ${{ inputs.BRANCH }}
-        STREAM: ${{ inputs.STREAM }}
-      secrets: inherit
+    with:
+      REPO_NAME: ${{ needs.initial-tasks.outputs.REPO_NAME }}
+      ANALYSIS_PATH: ${{ inputs.ANALYSIS_PATH }}
+      QUALITY_REPORT: ${{ inputs.QUALITY_REPORT }}
+      DISPATCH: true
+      BRANCH: ${{ inputs.BRANCH }}
+      STREAM: ${{ inputs.STREAM }}
+      environment: ${{ github.ref_name }}
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+      AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
