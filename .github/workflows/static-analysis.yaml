@@ -39,13 +39,13 @@ on:
         default: false
       BRANCH:
         description: 'Target Branch'
-        required: true
+        required: false
         type: string
         default: 'release'
       environment:
         type: string
         description: environment for env_secret
-        required: true
+        required: false
     secrets:
       GH_MANAGEPACKAGE_TOKEN:
         required: true
