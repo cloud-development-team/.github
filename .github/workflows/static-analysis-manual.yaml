@@ -73,7 +73,7 @@ jobs:
     needs: [initial-tasks]
     with:
       REPO_NAME: ${{ needs.initial-tasks.outputs.REPO_NAME }}
-      ANALYSIS_PATH: ${{ inputs.ANALYSIS_PATH }}
+      BUILD_PATH: ${{ inputs.ANALYSIS_PATH }}
       QUALITY_REPORT: ${{ inputs.QUALITY_REPORT }}
       DISPATCH: true
       BRANCH: ${{ inputs.BRANCH }}
