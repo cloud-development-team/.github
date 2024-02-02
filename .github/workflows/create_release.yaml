@@ -48,6 +48,7 @@ jobs:
   create-release:
     name: Create tag for new image
     needs: [initial_setting]
+    environment: ${{ github.ref_name }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
