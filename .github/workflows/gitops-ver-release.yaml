@@ -1,0 +1,74 @@
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+name: GitOps Release Versioning
+
+on:
+  workflow_call:
+    inputs:
+      repository_name:
+        required: true
+        description: "Name of repository"
+        type: string
+      repository_ref:
+        required: false
+        description: "Ref value of repository"
+        type: string
+        default: "main"
+      build_ver:
+        required: true
+        description: "Tag of image"
+        type: string
+      version_file_path:
+        required: false
+        description: "Path to the yaml file described all version of application"
+        type: string
+        default: "version.yaml"
+      application_name:
+        required: false
+        description: "Name of actual application"
+        type: string
+        default: ""
+    secrets:
+      GH_USERNAME:
+        required: true
+      GH_MANAGEPACKAGETOKEN:
+        required: false
+        description: "If not provided, the repo creds will be used."
+
+jobs:
+  gitops-release:
+    runs-on: ubuntu-latest
+    name: GitOps Release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set short commit sha to output
+        id: github-var
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Checkout state repo
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repository_name }}
+          path: ./gitops
+          ref: ${{ inputs.repository_ref }}
+          token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+
+      - name: Update version information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '
+              .${{ inputs.application_name }}.build-version = "${{ inputs.build_ver }}" |
+              .${{ inputs.application_name }}.commit-sha = "${{ steps.github-var.outputs.sha_short }}"
+            ' ./gitops/${{ inputs.version_file_path }}
+
+      - name: Commit changes
+        working-directory: ./gitops
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
+          git push origin main
+        continue-on-error: true
