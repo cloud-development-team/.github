@@ -31,10 +31,14 @@ jobs:
             repo=("dmpro-gitops-prod")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
             release_branch=main
+          # elif [ ${{ inputs.jira_key }}  == "IS360" ]; then
+          #   repo=("sightmind-backend-mono" "hc-frontend-mono")
+          #   repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
+          #   release_branch=production
           elif [ ${{ inputs.jira_key }}  == "IS360" ]; then
-            repo=("sightmind-backend-mono" "hc-frontend-mono")
+            repo=("global-infra-version")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
-            release_branch=production
+            release_branch=main
           elif [ ${{ inputs.jira_key }} == "KDOG" ]; then
             repo=("cloudrnd-experimental-test" "cloudrnd-infra-terraform")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
