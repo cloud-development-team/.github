@@ -36,7 +36,7 @@ jobs:
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
             release_branch=main
           elif [ ${{ inputs.jira_key }} == "KDOG" ]; then
-            repo=("cloudrnd-experimental-test" "cloudrnd-infra-terraform")
+            repo=("global-infra-version")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
             release_branch=main
           fi
