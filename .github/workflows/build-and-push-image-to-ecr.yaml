@@ -75,8 +75,12 @@ jobs:
       - name: Version
         id: version
         run: |
+          echo "inputs.environment"
+          echo ${{ inputs.environment }}
           if [[ "${{ inputs.image_tag }}" != '' ]]; then
             echo "version=${{ inputs.image_tag }}" >> $GITHUB_OUTPUT
+          elif [ ${{ inputs.environment }}  == "hotfix" ]; then
+            echo "version=hotfix-$(date +'%Y%m%dT%H%M%S')" >> $GITHUB_OUTPUT
           else
             echo "version=dev-$(date +'%Y%m%dT%H%M%S')" >> $GITHUB_OUTPUT
           fi
