@@ -27,7 +27,7 @@ on:
           - sightmind-hc-frontend-mono
           - dmpro-hook-portal
           - dmpro-manager-schedule
-          - dmpro-update-devicemodel
+          - dmpro-updater-devicemodel
           - hvcp-authorization
       ANALYSIS_PATH:
         description: 'Target Path'
