@@ -11,7 +11,6 @@ on:
         type: choice
         default: 'Insert Repo Name'
         options:  
-          - dmpro-auth-temporary
           - dmpro-config-user
           - dmpro-dcs-generic
           - dmpro-dcs-specific
@@ -26,6 +25,10 @@ on:
           - global-rule-engine
           - sightmind-backend-mono
           - sightmind-hc-frontend-mono
+          - dmpro-hook-portal
+          - dmpro-manager-schedule
+          - dmpro-update-devicemodel
+          - hvcp-authorization
       ANALYSIS_PATH:
         description: 'Target Path'
         required: true
