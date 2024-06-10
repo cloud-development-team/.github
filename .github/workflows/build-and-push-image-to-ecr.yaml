@@ -143,8 +143,7 @@ jobs:
             "PRIVATE_NPM_TOKEN=${{ secrets.PRIVATE_NPM_TOKEN }}"
           tags: |
             "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.version }}"
-            "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.sha_short }}"
-            "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:graviton"
+            "${{ inputs.ecr_registry }}/${{ inputs.ecr_repository }}:${{ needs.create-tag.outputs.sha_short }}-graviton"
         
       - name: Build, tag, and push image to Amazon ECR
         if: ${{ inputs.arch != 'graviton' }}
