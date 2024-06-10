@@ -47,7 +47,7 @@ on:
         default: "dev"
       arch:
         required: false
-        description: "graviton test branch dcs generic"
+        description: "docker architecture to build and push image. graviton or x86"
         type: string
         default: "x86"
     secrets:
