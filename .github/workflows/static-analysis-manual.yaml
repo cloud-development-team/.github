@@ -1,6 +1,6 @@
 name: Manual Static Analysis
  
-run-name: '${{ github.event.sender.login }} executed manual static analysis'
+run-name: '[${{inputs.STREAM}}] ${{ github.event.sender.login }} executed manual static analysis'
 
 on:
   workflow_dispatch:
