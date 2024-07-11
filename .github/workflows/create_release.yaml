@@ -76,12 +76,12 @@ jobs:
           ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
-      - name: Trigger Project Workflow
-        run: |
-          curl -X POST -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}" \
-          https://api.github.com/repos/cloud-development-team/${{ matrix.repo }}/dispatches \
-          -d '{"event_type":"jira_release","client_payload":{"release_env":"${{ needs.initial_setting.outputs.release_env }}"}}'
+      # - name: Trigger Project Workflow
+      #   run: |
+      #     curl -X POST -H "Accept: application/vnd.github.v3+json" \
+      #     -H "Authorization: token ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}" \
+      #     https://api.github.com/repos/cloud-development-team/${{ matrix.repo }}/dispatches \
+      #     -d '{"event_type":"jira_release","client_payload":{"release_env":"${{ needs.initial_setting.outputs.release_env }}"}}'
 
       - name: Create Github Release
         uses: actions/create-release@v1
