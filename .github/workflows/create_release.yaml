@@ -17,7 +17,7 @@ on:
         type: string
       release_env:
         description: 'Release Environment'
-        required: false
+        required: true
         default: ""
         type: string
 
