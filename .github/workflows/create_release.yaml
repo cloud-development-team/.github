@@ -25,8 +25,13 @@ jobs:
   initial_setting:
     outputs:
       repo: ${{ steps.set_env.outputs.repo }}
+      backend_repo: ${{ steps.set_env.outputs.backend_repo }}
+      frontend_repo: ${{ steps.set_env.outputs.frontend_repo }}
+      global_release_branch: ${{ steps.set_env.outputs.global_release_branch }}
       release_branch: ${{ steps.set_env.outputs.release_branch }}
       release_env: ${{ steps.set_env.outputs.release_env }}
+      release_version: ${{ steps.set_env.outputs.release_version }}
+      project: ${{ steps.set_env.outputs.project }}
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
@@ -36,52 +41,65 @@ jobs:
           if [ ${{ inputs.jira_key }}  == "CPD" ]; then
             repo=("dmpro-gitops-prod")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
-            release_branch=main
           elif [ ${{ inputs.jira_key }}  == "IS360" ]; then
             repo=("global-infra-version")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
-            release_branch=main
+            backend_repo="sightmind-backend-mono"
+            Frontend-repo="hc-frontend-mono"
+            project="sm"
           elif [ ${{ inputs.jira_key }} == "KDOG" ]; then
             repo=("global-infra-version")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
-            release_branch=main
           fi
 
+          if [ ${{ inputs.release_env }}  == "QA" ]; then
+            release_branch=release  
+          else
+            release_branch=production
+          fi
+
+          global_release_branch=main
           release_env="${{ inputs.release_env }}"
+          release_version="${{ inputs.release_version }}"
           
           echo "Repository  : $REPO\nBranch      : $REPO1"
           echo "repo=$repo" >> $GITHUB_OUTPUT
+          echo "global_release_branch=$global_release_branch" >> $GITHUB_OUTPUT
           echo "release_branch=$release_branch" >> $GITHUB_OUTPUT
           echo "release_env=$release_env" >> $GITHUB_OUTPUT
+          echo "release_version=$release_version" >> $GITHUB_OUTPUT
+          echo "project=$project" >> $GITHUB_OUTPUT
 
       - name: Fail if environment is unknown
         if: ${{ steps.set_env.outputs.release_env != 'QA' && steps.set_env.outputs.release_env != 'PROD' && !contains(steps.set_env.outputs.release_env, 'hotfix/') }}
         run: |
           echo "Environment is not QA, PROD, or HOTFIX. Failing the workflow."
           exit 1
-          
-  create-release-and-trigger-deployment:
-    name: Create tag for new image and trigger deployment
+
+  trigger-deployment:
+    name: trigger deployment
     needs: [initial_setting]
     environment: ${{ github.ref_name }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        repo:  ${{fromJson(needs.initial_setting.outputs.repo)}}
+        include:
+          - repo: ${{ needs.initial_setting.outputs.backend_repo }}
+          - repo: ${{ needs.initial_setting.outputs.frontend_repo }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           repository: cloud-development-team/${{ matrix.repo }}
-          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
+          ref: refs/heads/${{ needs.initial_setting.outputs.global_release_branch }}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
-      # - name: Trigger Project Workflow
-      #   run: |
-      #     curl -X POST -H "Accept: application/vnd.github.v3+json" \
-      #     -H "Authorization: token ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}" \
-      #     https://api.github.com/repos/cloud-development-team/${{ matrix.repo }}/dispatches \
-      #     -d '{"event_type":"jira_release","client_payload":{"release_env":"${{ needs.initial_setting.outputs.release_env }}"}}'
+      - name: Trigger Project Workflow
+        run: |
+          curl -X POST -H "Accept: application/vnd.github.v3+json" \
+          -H "Authorization: token ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}" \
+          https://api.github.com/repos/cloud-development-team/${{ matrix.repo }}/dispatches \
+          -d '{"event_type":"${{ needs.initial_setting.outputs.project}}_jira_release","client_payload":{"release_version":"${{ needs.initial_setting.outputs.release_version }}", "release_env":"${{ needs.initial_setting.outputs.release_env }}"}}'
 
       - name: Create Github Release
         uses: actions/create-release@v1
@@ -91,7 +109,7 @@ jobs:
           tag_name: ${{ inputs.release_version }}
           release_name: ${{ inputs.release_version }}
           repo: ${{ matrix.repo }}
-          commitish: ${{ needs.initial_setting.outputs.release_branch }}
+          commitish: ${{ needs.initial_setting.outputs.global_release_branch }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
             - More information about this release can be found in Jira Release. 🔍
