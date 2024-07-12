@@ -38,24 +38,28 @@ jobs:
       - name: Repository List
         id: set_env
         run: |
-          if [ ${{ inputs.jira_key }}  == "CPD" ]; then
+          if [ "${{ inputs.jira_key }}"  == "CPD" ]; then
             repo=("dmpro-gitops-prod")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
-          elif [ ${{ inputs.jira_key }}  == "IS360" ]; then
+          elif [ "${{ inputs.jira_key }}"  == "IS360" ]; then
             repo=("global-infra-version")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
             backend_repo="sightmind-backend-mono"
             Frontend-repo="hc-frontend-mono"
             project="sm"
-          elif [ ${{ inputs.jira_key }} == "KDOG" ]; then
+          elif [ "${{ inputs.jira_key }}" == "KDOG" ]; then
             repo=("global-infra-version")
             repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
           fi
 
-          if [ ${{ inputs.release_env }}  == "QA" ]; then
-            release_branch=release  
-          else
+          if [ "${{ inputs.release_env }}"  == "QA" ]; then
+            release_branch=release
+          elif [ "${{ inputs.release_env }}" == "PROD" ]; then
+            release_branch=production  
+          elif [ "${{ inputs.release_env }}" == *"hotfix/"* ]; then
             release_branch=production
+          else
+            release_branch=null
           fi
 
           global_release_branch=main
@@ -71,13 +75,13 @@ jobs:
           echo "project=$project" >> $GITHUB_OUTPUT
 
       - name: Fail if environment is unknown
-        if: ${{ steps.set_env.outputs.release_env != 'QA' && steps.set_env.outputs.release_env != 'PROD' && !contains(steps.set_env.outputs.release_env, 'hotfix/') }}
+        if: ${{ steps.set_env.outputs.release_env == null }}
         run: |
           echo "Environment is not QA, PROD, or HOTFIX. Failing the workflow."
           exit 1
 
-  trigger-deployment:
-    name: trigger deployment
+  create-release-and-trigger-deployment:
+    name: create release and trigger deployment
     needs: [initial_setting]
     environment: ${{ github.ref_name }}
     runs-on: ubuntu-latest
@@ -93,7 +97,7 @@ jobs:
           repository: cloud-development-team/${{ matrix.repo }}
           ref: refs/heads/${{ needs.initial_setting.outputs.global_release_branch }}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-
+          
       - name: Trigger Project Workflow
         run: |
           curl -X POST -H "Accept: application/vnd.github.v3+json" \
