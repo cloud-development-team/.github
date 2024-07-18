@@ -50,7 +50,7 @@ jobs:
           tag_prefix: "shgw"
           bump_each_commit: false
           search_commit_body: true
-  create-release:
+  create-release-sp:
     if: ${{ inputs.jira_key == 'RMR' }}
     name: GitHub Release
     environment: main
