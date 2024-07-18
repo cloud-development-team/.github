@@ -32,13 +32,13 @@ jobs:
         id: set_env
         run: |
           if [ ${{ inputs.jira_key }}  == "RMR" ]; then
-            if [ ${{ release_version }} ==  sh_gw* ]; then
+            if [ ${{ inputs.release_version }} ==  sh_gw* ]; then
               repo=saasportal-cicd-test
-            elif [ ${{ release_version }} ==  sh_be* ]; then
+            elif [ ${{ inputs.release_version }} ==  sh_be* ]; then
               repo=saleshub-backend
-            elif [ ${{ release_version }} ==  sh_fe* ]; then
+            elif [ ${{ inputs.release_version }} ==  sh_fe* ]; then
               repo=saleshub-frontend
-            elif [ ${{ release_version }} ==  sh_li* ]; then
+            elif [ ${{ inputs.release_version }} ==  sh_li* ]; then
               repo=license-server
             fi
           elif [ ${{ inputs.jira_key }}  == "CPD" ]; then
