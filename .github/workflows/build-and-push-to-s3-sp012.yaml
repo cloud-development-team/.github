@@ -1,0 +1,105 @@
+name: Build with pnpm and Save Artifact to S3
+
+permissions: write-all
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: "Version number from semver"
+        value: ${{ jobs.pnpm-build.outputs.version }}
+    inputs:
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      pnpm_versions:
+        required: false
+        description: "pnpm version which want to use"
+        type: number
+        default: 8 
+      release_version:
+        description: 'Release Version'
+        required: true
+        default: ""
+        type: string
+      release_env:
+        description: 'Release Environment'
+        required: true
+        default: ""
+        type: string
+      release_repo:
+        description: 'Release Repository'
+        required: true
+        default: ""
+        type: string
+      release_s3:
+        description: 'Release S3 Bucket'
+        required: true
+        default: ""
+        type: string
+      release_account:
+        description: 'Release AWS Account'
+        required: true
+        default: ""
+        type: string
+      aws_qa_s3:
+        description: 'AWS QA S3 bucket Name (used for prod)'
+        required: false
+        default: ""
+        type: string
+      aws_qa_account:
+        description: 'AWS QA AccountId(used for prod)'
+        required: false
+        default: ""
+        type: string
+jobs:
+  pnpm-build:
+    if: ${{ inputs.release_env == 'release' }}
+    name: Run Node Build
+    runs-on: ubuntu-latest
+    environment: main
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/${{ inputs.release_repo }}
+          ref: ${{ version }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: Install dependencies
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          pnpm install
+      - name: Build
+        if: github.ref_name != 'production'
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          pnpm run build
+          echo "================"
+          ls -al 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+          role-session-name: GitHub-Actions-Assume
+          aws-region: us-east-1
+      - name: Zip build output
+        if: github.ref_name != 'production'
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          zip -qry deploy.zip .
+
+      - name: Push build artifact to S3 Bucket
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.release_account }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+          aws s3 cp ./deploy.zip s3://${{ inputs.release_s3 }}/gateway-test/deploy.zip --only-show-errors 
