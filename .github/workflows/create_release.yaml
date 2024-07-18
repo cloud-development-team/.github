@@ -25,10 +25,22 @@ jobs:
   make_pr:
     if: ${{ inputs.jira_key == 'RMR' }}
     name: Make PR
-    uses: cloud-development-team/saasportal-cicd-test/.github/workflows/pr_merge.yaml@development
-    with:
-      release_version: ${{ inputs.release_version }}
-      release_env: ${{ inputs.release_env}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/saasportal-cicd-test
+          ref: development
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+      - name: Run workflow from private repository
+        run: |
+          cd .github/workflows
+          ./pr_merge.yaml 
+        env:
+          release_version: ${{ inputs.release_version }}
+          release_env: ${{ inputs.release_env }}
 
     
    
