@@ -34,34 +34,34 @@ on:
         required: true
         default: ""
         type: string
-      release_s3:
-        description: 'Release S3 Bucket'
+      prod_s3_bucket:
+        description: 'Prod env S3 Bucket Name'
         required: true
         default: ""
         type: string
-      release_account:
-        description: 'Release AWS Account'
+      prod_aws_account:
+        description: 'Prod AWS Account'
         required: true
         default: ""
         type: string
-      aws_qa_s3:
-        description: 'AWS QA S3 bucket Name (used for prod)'
+      qa_s3_bucket:
+        description: 'QA env S3 Bucket Name'
         required: false
         default: ""
         type: string
-      aws_qa_account:
-        description: 'AWS QA AccountId(used for prod)'
+      qa_aws_account:
+        description: 'QA AWS Account'
         required: false
         default: ""
         type: string
 jobs:
   pnpm-build:
-    if: ${{ inputs.release_env == 'release' }}
     name: Run Node Build
     runs-on: ubuntu-latest
     environment: main
     steps:
       - name: Checkout current repository
+        if: ${{ inputs.release_env == 'release' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -69,14 +69,17 @@ jobs:
           ref: ${{ inputs.release_version }}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
       - name: Setup pnpm
+        if: ${{ inputs.release_env == 'release' }}
         uses: pnpm/action-setup@v2
         with:
           version: 8
       - name: Install dependencies
+        if: ${{ inputs.release_env == 'release' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           pnpm install
       - name: Build
+        if: ${{ inputs.release_env == 'release' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           pnpm run build
@@ -89,16 +92,31 @@ jobs:
           role-session-name: GitHub-Actions-Assume
           aws-region: us-east-1
       - name: Zip build output
-        if: github.ref_name != 'production'
+        if: ${{ inputs.release_env == 'release' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           zip -qry deploy.zip .
 
       - name: Push build artifact to S3 Bucket
+        if: ${{ inputs.release_env == 'release' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
-          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.release_account }}:role/AWSControlTowerExecution --role-session-name AWS)
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-          aws s3 cp ./deploy.zip s3://${{ inputs.release_s3 }}/gateway-test/deploy.zip --only-show-errors 
+
+          aws s3 cp ./deploy.zip s3://${{ inputs.qa_s3_bucket }}/gateway-test/deploy.zip --only-show-errors 
+
+      - name: Prod build
+        if: ${{ inputs.release_env == 'prod' }}
+        run: |
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+
+          aws s3 cp s3://${{ inputs.qa_s3_bucket }}/gateway-test/deploy.zip s3://${{ inputs.prod_s3_bucket }}/gateway-test/deploy.zip --only-show-errors 
+      
+
+
