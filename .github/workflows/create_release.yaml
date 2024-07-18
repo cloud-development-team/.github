@@ -22,10 +22,39 @@ on:
         type: string
 
 jobs:
-  make_pr:
+  versioning:
     if: ${{ inputs.jira_key == 'RMR' }}
-    name: Make PR
+    name: Get Previous Version
     environment: main
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      previous_version: ${{ steps.version.outputs.previous_version }}
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/saasportal-cicd-test
+          ref: refs/heads/development
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+
+
+      - name: Semantic Versioning
+        id: version
+        uses: paulhatch/semantic-version@v5.1.0
+        with:
+          major_pattern: "(MAJOR)"
+          minor_pattern: "(MINOR)"
+          version_format: "shgw${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}.${{ steps.version.outputs.patch }}"
+          tag_prefix: "shgw"
+          bump_each_commit: false
+          search_commit_body: true
+  create-release:
+    if: ${{ inputs.jira_key == 'RMR' }}
+    name: GitHub Release
+    environment: main
+    needs: [versioning]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current repository
@@ -35,17 +64,73 @@ jobs:
           repository: cloud-development-team/saasportal-cicd-test
           ref: refs/heads/development
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-          repository: cloud-development-team/saasportal-cicd-test
-          base: refs/heads/development
-          branch: refs/heads/release
-          title: ${{ inputs.release_version }}
-          body: "Release version: ${{ inputs.release_version }}"
-          draft: false
 
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+        with:
+          tag_name: ${{ inputs.release_version }}
+          name: ${{ inputs.release_version }}
+          body: ${{ steps.release_changelog.outputs.changelog }}
+
+
+
+      - name: Build Release Changelog
+        id: release_changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          toTag: ${{ inputs.release_version }}
+          fromTag: shgw${{ needs.versioning.outputs.previous_version }}
+          configurationJson: |
+            {
+              "categories": [
+                {
+                    "title": "## 🚀 Feature",
+                    "rules": [
+                      {
+                        "pattern": "feat",
+                        "on_property": "title",
+                        "method": "match"
+                      }
+                    ]
+                },
+                {
+                    "title": "## 🐛 Fix",
+                    "rules": [
+                      {
+                        "pattern": "fix",
+                        "on_property": "title",
+                        "method": "match"
+                      }
+                    ]
+                },
+                {
+                  "title": "## 📦 Uncategorized",
+                  "rules": [
+                    {
+                      "pattern": "^(?!.*\\b(feat|fix)\\b).*$",
+                      "on_property": "title",
+                      "method": "match"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      
+      
+      - name: Add Changelog Report to Release
+        uses: irongut/EditRelease@v1.2.0
+        with:
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          id: ${{ steps.create_release.outputs.id }}
+          body: ${{ steps.release_changelog.outputs.changelog }}
+
+      
     
    
   initial_setting:
