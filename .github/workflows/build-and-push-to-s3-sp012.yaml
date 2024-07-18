@@ -93,10 +93,6 @@ jobs:
           role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
           role-session-name: GitHub-Actions-Assume
           aws-region: us-east-1
-      - name: Zip build output
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          zip -qry deploy.zip .
 
       - name: Push build artifact to S3 Bucket
         working-directory: ${{ inputs.working_dir }}
@@ -105,8 +101,9 @@ jobs:
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-
-          aws s3 cp ./deploy.zip s3://${{ inputs.qa_s3_bucket }}/gateway-test/deploy.zip --only-show-errors 
+          aws s3 cp s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/env . --only-show-errors
+          zip -qry deploy.zip .
+          aws s3 cp ./deploy.zip s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors 
   prod-deploy:
     name: Run Node Build
     if: ${{ inputs.release_env == 'prod' }}
@@ -127,7 +124,7 @@ jobs:
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
-          aws s3 cp s3://${{ inputs.qa_s3_bucket }}/gateway-test/deploy.zip . --only-show-errors 
+          aws s3 cp s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip . --only-show-errors 
       - name: ReConfigure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -136,9 +133,13 @@ jobs:
           aws-region: us-east-1
       - name: Push to S3 Bucket
         run: |
+          unzip deploy.zip
+          rm env deploy.zip
+
           identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-
-          aws s3 cp ./deploy.zip s3://${{ inputs.prod_s3_bucket }}/gateway-test/deploy.zip --only-show-errors
+          aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/env . --only-show-errors
+          zip -qry deploy.zip .
+          aws s3 cp ./deploy.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors
