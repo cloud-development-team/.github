@@ -22,7 +22,7 @@ on:
         type: string
 
 jobs:
-  versioning:
+  create-release-sp012:
     if: ${{ inputs.jira_key == 'RMR' }}
     name: Get Previous Version
     environment: main
@@ -40,98 +40,24 @@ jobs:
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
 
-      - name: Semantic Versioning
-        id: version
-        uses: paulhatch/semantic-version@v5.1.0
-        with:
-          major_pattern: "(MAJOR)"
-          minor_pattern: "(MINOR)"
-          version_format: "shgw${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}.${{ steps.version.outputs.patch }}"
-          tag_prefix: "shgw"
-          bump_each_commit: false
-          search_commit_body: true
-  create-release-sp:
-    if: ${{ inputs.jira_key == 'RMR' }}
-    name: GitHub Release
-    environment: main
-    needs: [versioning]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout current repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          repository: cloud-development-team/saasportal-cicd-test
-          ref: refs/heads/development
-          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
+      - name: Create Github Release
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
         with:
           tag_name: ${{ inputs.release_version }}
-          name: ${{ inputs.release_version }}
-          body: ${{ steps.release_changelog.outputs.changelog }}
-          repository: cloud-development-team/saasportal-cicd-test
+          release_name: ${{ inputs.release_version }}
+          repo: saasportal-cicd-test
+          body: |
+            🤖 This release was created by ${{ github.event.sender.login }}.
+            - More information about this release can be found in Jira Release. 🔍
+            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
+            - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
 
-
-
-      - name: Build Release Changelog
-        id: release_changelog
-        uses: mikepenz/release-changelog-builder-action@v4
-        with:
-          repo: cloud-development-team/saasportal-cicd-test
-          toTag: ${{ inputs.release_version }}
-          fromTag: shgw${{ needs.versioning.outputs.previous_version }}
-          configurationJson: |
-            {
-              "categories": [
-                {
-                    "title": "## 🚀 Feature",
-                    "rules": [
-                      {
-                        "pattern": "feat",
-                        "on_property": "title",
-                        "method": "match"
-                      }
-                    ]
-                },
-                {
-                    "title": "## 🐛 Fix",
-                    "rules": [
-                      {
-                        "pattern": "fix",
-                        "on_property": "title",
-                        "method": "match"
-                      }
-                    ]
-                },
-                {
-                  "title": "## 📦 Uncategorized",
-                  "rules": [
-                    {
-                      "pattern": "^(?!.*\\b(feat|fix)\\b).*$",
-                      "on_property": "title",
-                      "method": "match"
-                    }
-                  ]
-                }
-              ]
-            }
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      
-      
-      - name: Add Changelog Report to Release
-        uses: irongut/EditRelease@v1.2.0
-        with:
-          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-          id: ${{ steps.create_release.outputs.id }}
-          body: ${{ steps.release_changelog.outputs.changelog }}
-
+      - name: Github Release Result
+        run: |
+          echo "🔍 Check the release results"
+          echo "🔗 Github Release Link : https://github.com/cloud-development-team/saasportal-cicd-test/releases/tag/${{ inputs.release_version }}"
       
     
    
