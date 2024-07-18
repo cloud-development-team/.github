@@ -77,7 +77,6 @@ jobs:
         run: |
           pnpm install
       - name: Build
-        if: github.ref_name != 'production'
         working-directory: ${{ inputs.working_dir }}
         run: |
           pnpm run build
