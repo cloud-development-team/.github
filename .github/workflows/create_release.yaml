@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          repository: cloud-development-team/saasportal-cicd-test
+          repository: cloud-development-tea/saasportal-cicd-test
           ref: refs/heads/development
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
@@ -46,9 +46,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
         with:
           tag_name: ${{ inputs.release_version }}
-          repository: cloud-development-team/saasportal-cicd-test
+          repository: saasportal-cicd-test
           commitish: ${{ inputs.release_env }}
-          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
             - More information about this release can be found in Jira Release. 🔍
