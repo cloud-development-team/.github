@@ -29,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current repository
+        if: ${{ inputs.release_env != 'release' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -38,6 +39,7 @@ jobs:
 
 
       - name: Create Github Release
+        if: ${{ inputs.release_env != 'release' }}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
@@ -53,10 +55,13 @@ jobs:
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
 
       - name: Github Release Result
+        if: ${{ inputs.release_env != 'release' }}
         run: |
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/saasportal-cicd-test/releases/tag/${{ inputs.release_version }}"
+          
   build-and-push-to-s3:
+    needs: [create-release-sp012]
     name: Build and push artifact to s3
     uses: ./.github/workflows/build-and-push-to-s3-sp012.yaml
     with:
@@ -65,7 +70,7 @@ jobs:
       release_env: ${{ inputs.release_env }}
       release_repo: saasportal-cicd-test
       release_s3: sp012-build-q-ue1
-      release_account: 060636281042
+      release_account: '060636281042'
     secrets: inherit   
     
    
