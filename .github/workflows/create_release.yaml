@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          repository: cloud-development-tea/saasportal-cicd-test
+          repository: cloud-development-team/saasportal-cicd-test
           ref: refs/heads/release
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
