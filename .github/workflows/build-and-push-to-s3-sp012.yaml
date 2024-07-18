@@ -118,6 +118,10 @@ jobs:
           
 
           aws s3 cp s3://${{ inputs.qa_s3_bucket }}/gateway-test/deploy.zip . --only-show-errors 
+
+          unset AWS_ACCESS_KEY_ID
+          unset AWS_SECRET_ACCESS_KEY
+          unset AWS_SESSION_TOKEN
           
           identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
