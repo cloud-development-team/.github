@@ -46,7 +46,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
         with:
           tag_name: ${{ inputs.release_version }}
-          release_name: ${{ inputs.release_version }}
           repo: saasportal-cicd-test
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
