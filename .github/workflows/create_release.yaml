@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 0
           repository: cloud-development-team/saasportal-cicd-test
           ref: refs/heads/development
-          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
       - name: Run workflow from private repository
         run: |
           cd .github/workflows
