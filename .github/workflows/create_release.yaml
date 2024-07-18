@@ -35,13 +35,16 @@ jobs:
           repository: cloud-development-team/saasportal-cicd-test
           ref: refs/heads/development
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-      - name: Run workflow from private repository
-        run: |
-          cd .github/workflows
-          ./pr_merge.yaml 
-        env:
-          release_version: ${{ inputs.release_version }}
-          release_env: ${{ inputs.release_env }}
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+          repository: cloud-development-team/saasportal-cicd-test
+          commit-message: Create PR by automation
+          base: development
+          branch: release
+          title: ${{ inputs.release_version }}
+          body: ${{ inputs.release_version }}
 
     
    
