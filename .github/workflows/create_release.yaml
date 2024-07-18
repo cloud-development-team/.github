@@ -32,7 +32,7 @@ jobs:
         id: set_env
         run: |
           if [ ${{ inputs.jira_key }}  == "RMR" ]; then
-            if [ ${{ inputs.release_version }} ==  "sh_gw*" ]; then
+            if [ grep -q "sh_gw" <<<"${{ inputs.release_version }}" ]; then
               repo=saasportal-cicd-test
             elif [ ${{ inputs.release_version }} ==  sh_be* ]; then
               repo=saleshub-backend
