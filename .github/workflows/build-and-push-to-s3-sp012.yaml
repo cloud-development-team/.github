@@ -133,7 +133,7 @@ jobs:
           aws-region: us-east-1
       - name: Push to S3 Bucket
         run: |
-          unzip -o deploy.zip
+          unzip -oq deploy.zip
           rm env deploy.zip
 
           identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
