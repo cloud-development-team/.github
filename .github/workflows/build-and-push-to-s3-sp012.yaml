@@ -66,7 +66,7 @@ jobs:
         with:
           fetch-depth: 0
           repository: cloud-development-team/${{ inputs.release_repo }}
-          ref: ${{ version }}
+          ref: ${{ inputs.release_version }}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
