@@ -92,7 +92,7 @@ jobs:
   sp012-gateway:
     if: startsWith( ${{ inputs.release_env }},  'sh_gw')
     needs: [initial_setting, create-release]
-    name: Build and push artifact to s3
+    name: Gateway Deploy
     uses: ./.github/workflows/build-and-push-to-s3-sp012.yaml
     with:
       working_dir: ./
