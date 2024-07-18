@@ -22,9 +22,38 @@ on:
         type: string
 
 jobs:
-  create-release-sp012:
-    if: ${{ inputs.jira_key == 'RMR' }}
+  initial_setting:
+    outputs:
+      repo: ${{ steps.set_env.outputs.repo }}
+    name: Initial Setting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository List
+        id: set_env
+        run: |
+          if [ ${{ inputs.jira_key }}  == "RMR" ]; then
+            if [ ${{ release_version }} ==  sh_gw* ]; then
+              repo=saasportal-cicd-test
+            elif [ ${{ release_version }} ==  sh_be* ]; then
+              repo=saleshub-backend
+            elif [ ${{ release_version }} ==  sh_fe* ]; then
+              repo=saleshub-frontend
+            elif [ ${{ release_version }} ==  sh_li* ]; then
+              repo=license-server
+            fi
+          elif [ ${{ inputs.jira_key }}  == "CPD" ]; then
+            repo=dmpro-gitops-prod
+          elif [ ${{ inputs.jira_key }}  == "IS360" ]; then
+            repo=global-infra-version
+          elif [ ${{ inputs.jira_key }} == "KDOG" ]; then
+            repo=global-infra-version
+          fi
+          
+          echo "repo=$repo" >> $GITHUB_OUTPUT
+
+  create-release:
     name: Create release
+    needs: [initial_setting]
     environment: main
     runs-on: ubuntu-latest
     steps:
@@ -33,7 +62,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          repository: cloud-development-team/saasportal-cicd-test
+          repository: cloud-development-team/${{ needs.initial_setting.outputs.repo }}
           ref: refs/heads/${{ inputs.release_env }}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
@@ -46,7 +75,7 @@ jobs:
         with:
           tag_name: ${{ inputs.release_version }}
           release_name: ${{ inputs.release_version }}
-          repo: saasportal-cicd-test
+          repo: ${{ needs.initial_setting.outputs.repo }}
           commitish: ${{ inputs.release_env }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
@@ -58,87 +87,23 @@ jobs:
         if: ${{ inputs.release_env == 'release' }}
         run: |
           echo "🔍 Check the release results"
-          echo "🔗 Github Release Link : https://github.com/cloud-development-team/saasportal-cicd-test/releases/tag/${{ inputs.release_version }}"
+          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
 
-  build-and-push-to-s3:
-    needs: [create-release-sp012]
+  sp012-gateway:
+    if: startsWith( ${{ inputs.release_env }},  'sh_gw')
+    needs: [initial_setting, create-release]
     name: Build and push artifact to s3
     uses: ./.github/workflows/build-and-push-to-s3-sp012.yaml
     with:
       working_dir: ./
       release_version: ${{ inputs.release_version }}
       release_env: ${{ inputs.release_env }}
-      release_repo: saasportal-cicd-test
+      release_repo: ${{ needs.initial_setting.outputs.repo }}
       qa_s3_bucket: sp012-build-q-ue1
       prod_s3_bucket: sp012-build-p-ue1
       qa_aws_account: '060636281042'
       prod_aws_account: '497796310523'
+      s3_prefix: gateway-test
     secrets: inherit   
     
    
-  initial_setting:
-    if: ${{ inputs.jira_key != 'RMR' }}
-    outputs:
-      repo: ${{ steps.set_env.outputs.repo }}
-      release_branch: ${{ steps.set_env.outputs.release_branch }}
-    name: Initial Setting
-    runs-on: ubuntu-latest
-    steps:
-      - name: Repository List
-        id: set_env
-        run: |
-          if [ ${{ inputs.jira_key }}  == "CPD" ]; then
-            repo=("dmpro-gitops-prod")
-            repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
-            release_branch=main
-          elif [ ${{ inputs.jira_key }}  == "IS360" ]; then
-            repo=("global-infra-version")
-            repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
-            release_branch=main
-          elif [ ${{ inputs.jira_key }} == "KDOG" ]; then
-            repo=("global-infra-version")
-            repo=`jq --compact-output --null-input '$ARGS.positional' --args -- "${repo[@]}"`
-            release_branch=main
-          fi
-          
-          echo "Repository  : $REPO\nBranch      : $REPO1"
-          echo "repo=$repo" >> $GITHUB_OUTPUT
-          echo "release_branch=$release_branch" >> $GITHUB_OUTPUT
-          
-  create-release:
-    if: ${{ inputs.jira_key != 'RMR' }}
-    name: Create tag for new image
-    needs: [initial_setting]
-    environment: ${{ github.ref_name }}
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        repo:  ${{fromJson(needs.initial_setting.outputs.repo)}}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          repository: cloud-development-team/${{ matrix.repo }}
-          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
-          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-
-      - name: Create Github Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-        with:
-          tag_name: ${{ inputs.release_version }}
-          release_name: ${{ inputs.release_version }}
-          repo: ${{ matrix.repo }}
-          commitish: ${{ needs.initial_setting.outputs.release_branch }}
-          body: |
-            🤖 This release was created by ${{ github.event.sender.login }}.
-            - More information about this release can be found in Jira Release. 🔍
-            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
-            - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
-
-      - name: Github Release Result
-        run: |
-          echo "🔍 Check the release results"
-          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}"
