@@ -46,7 +46,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
         with:
           tag_name: ${{ inputs.release_version }}
-          repo: cloud-development-team/saasportal-cicd-test
+          repository: cloud-development-team/saasportal-cicd-test
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
             - More information about this release can be found in Jira Release. 🔍
