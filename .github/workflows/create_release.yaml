@@ -47,6 +47,7 @@ jobs:
         with:
           tag_name: ${{ inputs.release_version }}
           repository: cloud-development-team/saasportal-cicd-test
+          commitish: ${{ inputs.release_env }}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
