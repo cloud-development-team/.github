@@ -22,7 +22,18 @@ on:
         type: string
 
 jobs:
+  make_pr:
+    if: ${{ inputs.jira_key == 'RMR' }}
+    name: Make PR
+    uses: cloud-development-team/saasportal-cicd-test/.github/workflows/pr_merge.yaml@development
+    with:
+      release_version: ${{ inputs.release_version }}
+      release_env: ${{ inputs.release_env}}
+
+    
+   
   initial_setting:
+    if: ${{ inputs.jira_key != 'RMR' }}
     outputs:
       repo: ${{ steps.set_env.outputs.repo }}
       release_branch: ${{ steps.set_env.outputs.release_branch }}
@@ -51,6 +62,7 @@ jobs:
           echo "release_branch=$release_branch" >> $GITHUB_OUTPUT
           
   create-release:
+    if: ${{ inputs.jira_key != 'RMR' }}
     name: Create tag for new image
     needs: [initial_setting]
     environment: ${{ github.ref_name }}
