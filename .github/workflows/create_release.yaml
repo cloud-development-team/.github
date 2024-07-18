@@ -25,6 +25,7 @@ jobs:
   make_pr:
     if: ${{ inputs.jira_key == 'RMR' }}
     name: Make PR
+    environment: main
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current repository
