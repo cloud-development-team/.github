@@ -40,11 +40,11 @@ jobs:
         with:
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
           repository: cloud-development-team/saasportal-cicd-test
-          commit-message: Create PR by automation
-          base: development
-          branch: release
+          base: refs/heads/development
+          branch: refs/heads/release
           title: ${{ inputs.release_version }}
-          body: ${{ inputs.release_version }}
+          body: "Release version: ${{ inputs.release_version }}"
+          draft: false
 
     
    
