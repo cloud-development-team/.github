@@ -34,11 +34,11 @@ jobs:
           if [ ${{ inputs.jira_key }}  == "RMR" ]; then
             if grep -q "sh_gw" <<<"${{ inputs.release_version }}"; then
               repo=saasportal-cicd-test
-            elif [ ${{ inputs.release_version }} ==  sh_be* ]; then
+            elif grep -q "sh_be" <<<"${{ inputs.release_version }}"; then
               repo=saleshub-backend
-            elif [ ${{ inputs.release_version }} ==  sh_fe* ]; then
+            elif grep -q "sh_fe" <<<"${{ inputs.release_version }}"; then
               repo=saleshub-frontend
-            elif [ ${{ inputs.release_version }} ==  sh_li* ]; then
+            elif grep -q "sh_li" <<<"${{ inputs.release_version }}"; then
               repo=license-server
             fi
           elif [ ${{ inputs.jira_key }}  == "CPD" ]; then
