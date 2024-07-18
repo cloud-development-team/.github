@@ -55,13 +55,13 @@ on:
         default: ""
         type: string
 jobs:
-  pnpm-build:
+  qa-build-deploy:
     name: Run Node Build
+    if: ${{ inputs.release_env == 'release' }}
     runs-on: ubuntu-latest
     environment: main
     steps:
       - name: Checkout current repository
-        if: ${{ inputs.release_env == 'release' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -69,17 +69,14 @@ jobs:
           ref: ${{ inputs.release_version }}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
       - name: Setup pnpm
-        if: ${{ inputs.release_env == 'release' }}
         uses: pnpm/action-setup@v2
         with:
           version: 8
       - name: Install dependencies
-        if: ${{ inputs.release_env == 'release' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           pnpm install
       - name: Build
-        if: ${{ inputs.release_env == 'release' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           pnpm run build
@@ -92,13 +89,11 @@ jobs:
           role-session-name: GitHub-Actions-Assume
           aws-region: us-east-1
       - name: Zip build output
-        if: ${{ inputs.release_env == 'release' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           zip -qry deploy.zip .
 
       - name: Push build artifact to S3 Bucket
-        if: ${{ inputs.release_env == 'release' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
@@ -107,26 +102,38 @@ jobs:
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
           aws s3 cp ./deploy.zip s3://${{ inputs.qa_s3_bucket }}/gateway-test/deploy.zip --only-show-errors 
-
-      - name: Prod build
-        if: ${{ inputs.release_env == 'prod' }}
+  prod-deploy:
+    name: Run Node Build
+    if: ${{ inputs.release_env == 'prod' }}
+    runs-on: ubuntu-latest
+    environment: main
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+          role-session-name: GitHub-Actions-Assume
+          aws-region: us-east-1
+      - name: Get QA code from S3 Bucket
+        working-directory: ${{ inputs.working_dir }}
         run: |
           identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-          
 
           aws s3 cp s3://${{ inputs.qa_s3_bucket }}/gateway-test/deploy.zip . --only-show-errors 
-
-          unset AWS_ACCESS_KEY_ID
-          unset AWS_SECRET_ACCESS_KEY
-          unset AWS_SESSION_TOKEN
-          
+      - name: ReConfigure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+          role-session-name: GitHub-Actions-Assume
+          aws-region: us-east-1
+      - name: Push to S3 Bucket
+        run: |
           identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
-          aws s3 cp deploy.zip s3://${{ inputs.prod_s3_bucket }}/gateway-test/deploy.zip --only-show-errors 
-
+          aws s3 cp ./deploy.zip s3://${{ inputs.prod_s3_bucket }}/gateway-test/deploy.zip --only-show-errors
