@@ -61,7 +61,7 @@ on:
         type: string
 jobs:
   qa-build-deploy:
-    name: Run Node Build
+    name: QA Build Deploy
     if: ${{ inputs.release_env == 'release' }}
     runs-on: ubuntu-latest
     environment: main
@@ -105,7 +105,7 @@ jobs:
           zip -qry deploy.zip .
           aws s3 cp ./deploy.zip s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors 
   prod-deploy:
-    name: Run Node Build
+    name: Prod Deploy
     if: ${{ inputs.release_env == 'prod' }}
     runs-on: ubuntu-latest
     environment: main
@@ -133,9 +133,8 @@ jobs:
           aws-region: us-east-1
       - name: Push to S3 Bucket
         run: |
-          unzip deploy.zip
-          cd deploy
-          rm env 
+          unzip -oq deploy.zip
+          rm env deploy.zip
 
           identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
