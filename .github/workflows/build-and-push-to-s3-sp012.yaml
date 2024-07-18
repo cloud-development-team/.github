@@ -111,12 +111,18 @@ jobs:
       - name: Prod build
         if: ${{ inputs.release_env == 'prod' }}
         run: |
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+          
+
+          aws s3 cp s3://${{ inputs.qa_s3_bucket }}/gateway-test/deploy.zip . --only-show-errors 
+          
           identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
-          aws s3 cp s3://${{ inputs.qa_s3_bucket }}/gateway-test/deploy.zip s3://${{ inputs.prod_s3_bucket }}/gateway-test/deploy.zip --only-show-errors 
-      
-
+          aws s3 cp deploy.zip s3://${{ inputs.prod_s3_bucket }}/gateway-test/deploy.zip --only-show-errors 
 
