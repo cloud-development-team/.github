@@ -166,7 +166,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
           role-session-name: GitHub-Actions-Assume
-          aws-region: us-east-1
+          aws-region: ap-northeast-2
       - name: Get Hitfix code from S3 Bucket
         working-directory: ${{ inputs.working_dir }}
         run: |
