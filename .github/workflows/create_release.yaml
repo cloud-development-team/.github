@@ -82,7 +82,7 @@ jobs:
           tag_name: ${{ inputs.release_version }}
           release_name: ${{ inputs.release_version }}
           repo: ${{ needs.initial_setting.outputs.repo }}
-          commitish: ${{ needs.initial_setting.outputs.repo }}
+          commitish: ${{ needs.initial_setting.outputs.branch }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
             - More information about this release can be found in Jira Release. 🔍
