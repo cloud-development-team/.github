@@ -25,6 +25,7 @@ jobs:
   initial_setting:
     outputs:
       repo: ${{ steps.set_env.outputs.repo }}
+      branch: ${{ steps.set_env.outputs.branch }}
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
@@ -34,12 +35,16 @@ jobs:
           if [ ${{ inputs.jira_key }}  == "RMR" ]; then
             if grep -q "sh_gw" <<<"${{ inputs.release_version }}"; then
               repo=saasportal-cicd-test
+              branch=release
             elif grep -q "sh_be" <<<"${{ inputs.release_version }}"; then
               repo=saleshub-backend
+              branch=release
             elif grep -q "sh_fe" <<<"${{ inputs.release_version }}"; then
               repo=saleshub-frontend
+              branch=release
             elif grep -q "sh_li" <<<"${{ inputs.release_version }}"; then
               repo=license-server
+              branch=release
             fi
           elif [ ${{ inputs.jira_key }}  == "CPD" ]; then
             repo=dmpro-gitops-prod
@@ -50,6 +55,7 @@ jobs:
           fi
           
           echo "repo=$repo" >> $GITHUB_OUTPUT
+          echo "branch=$branch" >> $GITHUB_OUTPUT
 
   create-release:
     name: Create release
@@ -58,17 +64,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current repository
-        if: ${{ inputs.release_env == 'release' }}
+        if: ${{ inputs.release_env == 'QA' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           repository: cloud-development-team/${{ needs.initial_setting.outputs.repo }}
-          ref: refs/heads/${{ inputs.release_env }}
+          ref: refs/heads/${{ needs.initial_setting.outputs.branch }}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
 
       - name: Create Github Release
-        if: ${{ inputs.release_env == 'release' }}
+        if: ${{ inputs.release_env == 'QA' }}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
@@ -76,7 +82,7 @@ jobs:
           tag_name: ${{ inputs.release_version }}
           release_name: ${{ inputs.release_version }}
           repo: ${{ needs.initial_setting.outputs.repo }}
-          commitish: ${{ inputs.release_env }}
+          commitish: ${{ needs.initial_setting.outputs.branch }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
             - More information about this release can be found in Jira Release. 🔍
@@ -84,13 +90,13 @@ jobs:
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
 
       - name: Github Release Result
-        if: ${{ inputs.release_env == 'release' }}
+        if: ${{ inputs.release_env == 'QA' }}
         run: |
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
 
   sp012-gateway:
-    if: startsWith( ${{ inputs.release_env }},  'sh_gw')
+    if: startsWith( ${{ inputs.release_version }},  'sh_gw')
     needs: [initial_setting, create-release]
     name: Gateway Deploy
     uses: ./.github/workflows/build-and-push-to-s3-sp012.yaml
@@ -101,8 +107,10 @@ jobs:
       release_repo: ${{ needs.initial_setting.outputs.repo }}
       qa_s3_bucket: sp012-build-q-ue1
       prod_s3_bucket: sp012-build-p-ue1
+      dev_s3_bucket: sp012-build-d-an2-001
       qa_aws_account: '060636281042'
       prod_aws_account: '497796310523'
+      dev_aws_account: '540528117317'
       s3_prefix: gateway-test
     secrets: inherit   
     
