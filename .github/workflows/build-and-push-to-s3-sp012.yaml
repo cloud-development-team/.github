@@ -111,7 +111,8 @@ jobs:
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-          aws s3 cp s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/env . --only-show-errors
+          env_script="aws s3 cp s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/env ."
+          sed -i '/^aws s3 cp/ s/.*/${env_script}/' ./scripts/deploy.sh
           zip -qry deploy.zip .
           aws s3 cp ./deploy.zip s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors 
   prod-deploy:
@@ -150,7 +151,8 @@ jobs:
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-          aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/env . --only-show-errors
+          env_script="aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/env ."
+          sed -i '/^aws s3 cp/ s/.*/${env_script}/' ./scripts/deploy.sh
           zip -qry deploy.zip .
           aws s3 cp ./deploy.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors
 
@@ -191,6 +193,7 @@ jobs:
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-          aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/env . --only-show-errors
+          env_script="aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/env ."
+          sed -i '/^aws s3 cp/ s/.*/${env_script}/' ./scripts/deploy.sh
           zip -qry deploy.zip .
           aws s3 cp ./deploy.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors
