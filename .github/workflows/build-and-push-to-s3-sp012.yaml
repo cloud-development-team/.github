@@ -54,6 +54,16 @@ on:
         required: false
         default: ""
         type: string
+      dev_s3_bucket:
+        description: 'DEV(hotfix) env S3 Bucket Name'
+        required: false
+        default: ""
+        type: string
+      dev_aws_account:
+        description: 'DEV(hotfix) AWS Account'
+        required: false
+        default: ""
+        type: string
       s3_prefix:
         description: 'S3 prefix for deploy.zip'
         required: true
@@ -62,7 +72,7 @@ on:
 jobs:
   qa-build-deploy:
     name: QA Build Deploy
-    if: ${{ inputs.release_env == 'release' }}
+    if: ${{ inputs.release_env == 'QA' }}
     runs-on: ubuntu-latest
     environment: main
     steps:
@@ -106,7 +116,7 @@ jobs:
           aws s3 cp ./deploy.zip s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors 
   prod-deploy:
     name: Prod Deploy
-    if: ${{ inputs.release_env == 'prod' }}
+    if: ${{ inputs.release_env == 'PROD' }}
     runs-on: ubuntu-latest
     environment: main
     steps:
@@ -125,6 +135,47 @@ jobs:
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
           aws s3 cp s3://${{ inputs.qa_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip . --only-show-errors 
+      - name: ReConfigure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+          role-session-name: GitHub-Actions-Assume
+          aws-region: us-east-1
+      - name: Push to S3 Bucket
+        run: |
+          unzip -oq deploy.zip
+          rm env deploy.zip
+
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+          aws s3 cp s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/env . --only-show-errors
+          zip -qry deploy.zip .
+          aws s3 cp ./deploy.zip s3://${{ inputs.prod_s3_bucket }}/${{ inputs.s3_prefix }}/deploy.zip --only-show-errors
+
+
+  hotfix-deploy:
+    name: Prod Deploy
+    if: startsWith( ${{ inputs.release_env }},  'hotfix')
+    runs-on: ubuntu-latest
+    environment: main
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+          role-session-name: GitHub-Actions-Assume
+          aws-region: us-east-1
+      - name: Get Hitfix code from S3 Bucket
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.dev_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+
+          aws s3 cp s3://${{ inputs.dev_s3_bucket }}/hotfix/${{ inputs.s3_prefix }}/deploy.zip . --only-show-errors 
       - name: ReConfigure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
