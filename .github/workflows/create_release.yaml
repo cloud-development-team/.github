@@ -95,7 +95,7 @@ jobs:
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
 
   sp012-gateway:
-    if: startsWith( ${{ inputs.release_version }},  'sh_gw')
+    if: ${{ inputs.jira_key }}  == "RMR"
     needs: [initial_setting, create-github-release]
     name: Gateway Deploy
     uses: ./.github/workflows/build-and-push-to-s3-sp012.yaml
