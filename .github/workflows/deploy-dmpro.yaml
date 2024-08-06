@@ -69,7 +69,7 @@ jobs:
         with:
           fetch-depth: 0
           repository: cloud-development-team/${{ inputs.release_repo }}
-          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
+          ref: refs/heads/main
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
           
       - name: Update version.json information
