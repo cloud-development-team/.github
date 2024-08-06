@@ -1,6 +1,6 @@
 name: Release Jira Version
 
-run-name: 'create_release ${{ inputs.jira_key }} - ${{ inputs.release_version }} by ${{ github.event.sender.login }}'
+run-name: 'create_release: ${{ inputs.jira_key }} - ${{ inputs.release_version }} by ${{ github.event.sender.login }}'
 
 on:
   workflow_dispatch:
@@ -95,7 +95,7 @@ jobs:
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
 
   sp012-gateway:
-    if: ${{ inputs.jira_key }}  == "RMR"
+    if: ${{ inputs.jira_key == 'RMR' }}
     needs: [initial_setting, create-github-release]
     name: Gateway Deploy
     uses: ./.github/workflows/build-and-push-to-s3-sp012.yaml
@@ -114,7 +114,7 @@ jobs:
     secrets: inherit   
     
   dmpro:
-    if: ${{ inputs.jira_key }}  == "KDOG"
+    if: ${{ inputs.jira_key  == 'KDOG' }} 
     needs: [initial_setting, create-github-release]
     name: DMPro Deploy
     uses: ./.github/workflows/deploy-dmpro.yaml
