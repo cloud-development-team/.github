@@ -21,11 +21,6 @@ on:
         required: true
         default: ""
         type: string                  
-      git_org:
-        description: 'github organization'
-        required: false
-        default: "cloud-development-team"
-        type: string
       qa_version_json_path:
         required: false
         description: "Path to the json file described all version of application"
@@ -56,11 +51,6 @@ on:
         description: "qa_cf_distribution_id"
         type: string
         default: "EOTSDFTM2NPH0"
-      prod_cf_distribution_id:
-        required: false
-        description: "prod_cf_distribution_id"
-        type: string
-        default: "E216BRXBWEUM5Z"
       dev_cf_distribution_id:
         required: false
         description: "dev_cf_distribution_id"
