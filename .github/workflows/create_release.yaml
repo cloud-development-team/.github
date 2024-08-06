@@ -1,6 +1,6 @@
 name: Release Jira Version
 
-run-name: 'create_release:' ${{ inputs.jira_key }} - ${{ inputs.release_version }} by ${{ github.event.sender.login }}
+run-name: 'create_release ${{ inputs.jira_key }} - ${{ inputs.release_version }} by ${{ github.event.sender.login }}'
 
 on:
   workflow_dispatch:
