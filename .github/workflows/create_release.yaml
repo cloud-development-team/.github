@@ -1,6 +1,6 @@
-name: Create Github Release
+name: Release Jira Version
 
-run-name: ${{ github.event.sender.login }} executes 'create_release' action for ${{ inputs.jira_key }}
+run-name: 'create_release:' ${{ inputs.jira_key }} - ${{ inputs.release_version }} by ${{ github.event.sender.login }}
 
 on:
   workflow_dispatch:
@@ -46,8 +46,10 @@ jobs:
               repo=license-server
               branch=release
             fi
-          elif [ ${{ inputs.jira_key }}  == "CPD" ]; then
-            repo=dmpro-gitops-prod
+          #elif [ ${{ inputs.jira_key }}  == "CPD" ]; then
+          elif [ ${{ inputs.jira_key }}  == "KDOG" ]; then
+            repo=dmpro-gitops
+            branch=main
           elif [ ${{ inputs.jira_key }}  == "IS360" ]; then
             repo=global-infra-version
           elif [ ${{ inputs.jira_key }} == "KDOG" ]; then
@@ -57,7 +59,7 @@ jobs:
           echo "repo=$repo" >> $GITHUB_OUTPUT
           echo "branch=$branch" >> $GITHUB_OUTPUT
 
-  create-release:
+  create-github-release:
     name: Create release
     needs: [initial_setting]
     environment: main
@@ -71,7 +73,6 @@ jobs:
           repository: cloud-development-team/${{ needs.initial_setting.outputs.repo }}
           ref: refs/heads/${{ needs.initial_setting.outputs.branch }}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-
 
       - name: Create Github Release
         if: ${{ inputs.release_env == 'QA' }}
@@ -114,4 +115,13 @@ jobs:
       s3_prefix: gateway-test
     secrets: inherit   
     
-   
+  dmpro:
+    if: ${{ inputs.jira_key }}  == "KDOG"
+    needs: [initial_setting, create-release]
+    name: DMPro Deploy
+    uses: ./.github/workflows/deploy-dmpro.yaml
+    with:
+      release_version: ${{ inputs.release_version }}
+      release_env: ${{ inputs.release_env }}
+      release_repo: ${{ needs.initial_setting.outputs.repo }}
+    secrets: inherit  
