@@ -34,11 +34,6 @@ on:
         description: "Name of actual application"
         type: string
         default: ""
-      version_file_path:
-        required: false
-        description: "Path to the yaml file described all version of application"
-        type: string
-        default: "version.yaml"
     secrets:
       GH_USERNAME:
         required: true
@@ -49,7 +44,7 @@ on:
 jobs:
   gitops-update:
     runs-on: ubuntu-latest
-    name: GitOps Release
+    name: GitOps Update
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -66,15 +61,6 @@ jobs:
           ref: ${{ inputs.repository_ref }}
           token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
 
-      # - name: Update image name and tag in version file(main)
-      #   uses: mikefarah/yq@v4.34.2
-      #   with:
-      #     cmd: |
-      #       yq -i '
-      #         .image.repository = "${{ inputs.image_name }}" |
-      #         .image.tag = "${{ inputs.image_tag }}"
-      #       ' ./gitops/${{ inputs.yaml_path }}
-
       - name: Update BE server version.json information(main)
         if: ${{ inputs.application_name != 'dmpro-frontend-mono'}}
         uses: mikefarah/yq@v4.34.2
@@ -89,7 +75,6 @@ jobs:
           cmd: |
             yq -i '.["FrontendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' ./gitops/${{ inputs.json_path }}
 
-
       - name: Update version information in version file(detail)
         if: ${{ inputs.application_name }} != ""
         uses: mikefarah/yq@v4.34.2
@@ -99,7 +84,6 @@ jobs:
               .${{ inputs.application_name }}.image-tag = "${{ inputs.image_tag }}" |
               .${{ inputs.application_name }}.commit-sha = "${{ steps.github-var.outputs.sha_short }}"
             ' ./gitops/${{ inputs.yaml_path }}
-
 
       - name: Commit changes
         working-directory: ./gitops

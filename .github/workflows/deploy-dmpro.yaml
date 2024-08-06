@@ -1,0 +1,153 @@
+name: DMPro Deploy
+run-name: DMPro Deploy - ${{ inputs.release_env }}
+
+permissions: write-all
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release Version'
+        required: true
+        default: ""
+        type: string
+      release_env:
+        description: 'Release environment'
+        required: true
+        default: ""
+        type: string
+      release_repo:
+        description: 'Release Repository'
+        required: true
+        default: ""
+        type: string                  
+      git_org:
+        description: 'github organization'
+        required: false
+        default: "cloud-development-team"
+        type: string
+      qa_version_json_path:
+        required: false
+        description: "Path to the json file described all version of application"
+        type: string
+        default: "qa_version.json"
+      prod_version_json_path:
+        required: false
+        description: "Path to the json file described all version of application"
+        type: string
+        default: "prod_version.json"
+      qa_aws_account:
+        required: false
+        description: "dmpro qa aws account id"
+        type: string
+        default: "027903527077"
+      dev_fe_bucket:
+        required: false
+        description: "dmpro dev FE bucket"
+        type: string
+        default: "dmpro013-static-dev-an2-001"
+      prod_aws_account:
+        required: false
+        description: "dmpro prod aws account id"
+        type: string
+        default: "390418701413"
+      qa_cf_distribution_id:
+        required: false
+        description: "qa_cf_distribution_id"
+        type: string
+        default: "EOTSDFTM2NPH0"
+      prod_cf_distribution_id:
+        required: false
+        description: "prod_cf_distribution_id"
+        type: string
+        default: "E216BRXBWEUM5Z"
+      dev_cf_distribution_id:
+        required: false
+        description: "dev_cf_distribution_id"
+        type: string
+        default: "E3R907T3RG686T"
+
+jobs:
+  qa-deploy:
+    name: DMPro QA Deploy
+    if: ${{ inputs.release_env == 'QA' }}
+    environment: main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: repository: cloud-development-team/${{ inputs.release_repo }}
+          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          
+      - name: Update version.json information
+        if: ${{ inputs.application_name }} != ""
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' dev_version.json     
+
+      - name: Get Time
+        id: time
+        uses: nanzm/get-time-action@master
+        with:
+          timeZone: UTC-9
+          format: 'YYYY-MM-DD HH:mm:ss'
+
+      - name: Update Release date to version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' dev_version.json
+
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Deploy
+        run: |
+          while IFS= read -r line; do
+            if [[ "${line:0:1}" != " " ]]; then
+              service_name=$(echo "$line" | awk -F':' '{print $1}')
+            elif [[ $line == *"image-tag"* ]]; then
+              image_tag=$(echo "$line" | awk '{print $2}')
+              yq -i '
+                .image.tag = "'$image-tag'" |
+              ' ./$service_name/env/dev.yaml || true
+            fi
+          done < dev_version.yaml
+
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "cd: deploy dmpro dev test for ${{ inputs.release_version }}" && \
+          git push origin main
+        continue-on-error: true
+
+      # Login To HVC_Admin_Automation for Deploy
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+          role-session-name: GitHub-Actions-Assume
+          aws-region: us-east-1
+
+      # Assume to Each Account as AWSControlTowerExecution
+      - name: Push build artifact to S3 Bucket and invalidation CloudFront
+        run: |
+          # Assume Role using an Automation Key
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+
+          # aws s3 sync s3://${{ inputs.dev_fe_bucket }}/predeploy/_next/static s3://${{ inputs.dev_fe_bucket }}/_next/static  --delete
+          # aws s3 sync s3://${{ inputs.dev_fe_bucket }}/predeploy/public s3://${{ inputs.dev_fe_bucket }}/public --delete
+
+          # Setting CloudFront
+          aws cloudfront create-invalidation --distribution-id ${{ inputs.dev_cf_distribution_id }} --paths "/*"
