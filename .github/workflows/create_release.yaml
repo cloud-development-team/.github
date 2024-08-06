@@ -96,7 +96,7 @@ jobs:
 
   sp012-gateway:
     if: startsWith( ${{ inputs.release_version }},  'sh_gw')
-    needs: [initial_setting, create-release]
+    needs: [initial_setting, create-github-release]
     name: Gateway Deploy
     uses: ./.github/workflows/build-and-push-to-s3-sp012.yaml
     with:
@@ -115,7 +115,7 @@ jobs:
     
   dmpro:
     if: ${{ inputs.jira_key }}  == "KDOG"
-    needs: [initial_setting, create-release]
+    needs: [initial_setting, create-github-release]
     name: DMPro Deploy
     uses: ./.github/workflows/deploy-dmpro.yaml
     with:
