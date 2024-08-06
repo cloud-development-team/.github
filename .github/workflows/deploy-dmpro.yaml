@@ -78,7 +78,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          repository: repository: cloud-development-team/${{ inputs.release_repo }}
+          repository: cloud-development-team/${{ inputs.release_repo }}
           ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
           
