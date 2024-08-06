@@ -105,7 +105,7 @@ jobs:
             elif [[ $line == *"image-tag"* ]]; then
               image_tag=$(echo "$line" | awk '{print $2}')
               yq -i '
-                .image.tag = "'$image-tag'" ' ./$service_name/env/dev.yaml || true
+                .image.tag = "'$image_tag'" ' ./$service_name/env/dev.yaml || true
             fi
           done < dev_version.yaml
 
