@@ -61,6 +61,11 @@ on:
         description: "prod_cf_distribution_id"
         type: string
         default: "E216BRXBWEUM5Z"
+      dev_cf_distribution_id:
+        required: false
+        description: "dev_cf_distribution_id"
+        type: string
+        default: "E3R907T3RG686T"
 
 jobs:
   qa-deploy:
@@ -120,7 +125,7 @@ jobs:
           git config user.name "GitHub Actions Bot" && \
           git config user.email "<>" && \
           git add --all
-          git commit -m "cd: deploy dmpro qa for ${{ inputs.release_version }}" && \
+          git commit -m "cd: deploy dmpro dev test for ${{ inputs.release_version }}" && \
           git push origin main
         continue-on-error: true
 
@@ -145,4 +150,4 @@ jobs:
           # aws s3 sync s3://${{ inputs.dev_fe_bucket }}/predeploy/public s3://${{ inputs.dev_fe_bucket }}/public --delete
 
           # Setting CloudFront
-          aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cf_distribution_id }} --paths "/*"
+          aws cloudfront create-invalidation --distribution-id ${{ inputs.dev_cf_distribution_id }} --paths "/*"

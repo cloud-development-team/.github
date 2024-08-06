@@ -52,8 +52,6 @@ jobs:
             branch=main
           elif [ ${{ inputs.jira_key }}  == "IS360" ]; then
             repo=global-infra-version
-          elif [ ${{ inputs.jira_key }} == "KDOG" ]; then
-            repo=global-infra-version
           fi
           
           echo "repo=$repo" >> $GITHUB_OUTPUT
