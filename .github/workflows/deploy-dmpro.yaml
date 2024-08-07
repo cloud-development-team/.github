@@ -118,6 +118,76 @@ jobs:
           git commit -m "cd: deploy dmpro dev test for ${{ inputs.release_version }}" && \
           git push origin main
         continue-on-error: true
+  
+  prod-deploy:
+    name: DMPro PROD Deploy
+    if: ${{ inputs.release_env == 'PROD' }}
+    environment: main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/${{ inputs.release_repo }}
+          ref: refs/heads/main
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Copy the qa_version.yaml file to prod_version.yaml file.
+        run: |
+          pwd
+          ls -la
+          cp dev_version.yaml qa_version.yaml
+          cp dev_version.json qa_version.json
+          
+      - name: Update version.json information
+        if: ${{ inputs.application_name }} != ""
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
+
+      - name: Get Time
+        id: time
+        uses: nanzm/get-time-action@master
+        with:
+          timeZone: UTC-9
+          format: 'YYYY-MM-DD HH:mm:ss'
+
+      - name: Update Release date to version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
+
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Deploy
+        run: |
+          while IFS= read -r line; do
+            if [[ "${line:0:1}" != " " ]]; then
+              service_name=$(echo "$line" | awk -F':' '{print $1}')
+            elif [[ $line == *"image-tag"* ]]; then
+              image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
+              yq -i '
+                .image.tag = "'$image_tag'"
+              ' ./$service_name/env/qa.yaml || true
+            fi
+          done < qa_version.yaml
+
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "cd: deploy dmpro dev test for ${{ inputs.release_version }}" && \
+          git push origin main
+        continue-on-error: true
+      
+      
 
       # # Login To HVC_Admin_Automation for Deploy
       # - name: Configure AWS credentials
