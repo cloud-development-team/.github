@@ -59,10 +59,10 @@ jobs:
             repo=dmpro-gitops
             branch=main
           elif [ ${{ inputs.jira_key }}  == "IS360" ]; then
-            backend_repo="sightmind-backend-mono"
-            frontend-repo="hc-frontend-mono"
-            test-repo="sightmind_jira_test"
-            project="sm"
+            backend_repo=sightmind-backend-mono
+            frontend-repo=hc-frontend-mono
+            test-repo=sightmind_jira_test
+            project=sm
 
             echo "backend_repo=$backend_repo" >> $GITHUB_OUTPUT
             echo "frontend-repo=$frontend-repo" >> $GITHUB_OUTPUT
