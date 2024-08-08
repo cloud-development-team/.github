@@ -17,7 +17,7 @@ on:
         type: string
       release_env:
         description: 'Release Environment'
-        required: false
+        required: true
         default: ""
         type: string
 
@@ -26,6 +26,14 @@ jobs:
     outputs:
       repo: ${{ steps.set_env.outputs.repo }}
       branch: ${{ steps.set_env.outputs.branch }}
+      backend_repo: ${{ steps.set_env.outputs.backend_repo }}
+      frontend_repo: ${{ steps.set_env.outputs.frontend_repo }}
+      test_repo: ${{ steps.set_env.outputs.test_repo }}
+      release_env: ${{ steps.set_env.outputs.release_env }}
+      release_version: ${{ steps.set_env.outputs.release_version }}
+      release_branch: ${{ steps.set_env.outputs.release_branch }}
+      project: ${{ steps.set_env.outputs.project }}
+      
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
@@ -51,14 +59,44 @@ jobs:
             repo=dmpro-gitops
             branch=main
           elif [ ${{ inputs.jira_key }}  == "IS360" ]; then
-            repo=global-infra-version
+            backend_repo="sightmind-backend-mono"
+            frontend-repo="hc-frontend-mono"
+            test-repo="sightmind_jira_test"
+            project="sm"
+
+            echo "backend_repo=$backend_repo" >> $GITHUB_OUTPUT
+            echo "frontend-repo=$frontend-repo" >> $GITHUB_OUTPUT
+            echo "test-repo=$test-repo" >> $GITHUB_OUTPUT
+          fi
+
+          if [ "${{ inputs.release_env }}"  == "QA" ]; then
+            release_branch=release
+          elif [ "${{ inputs.release_env }}" == "PROD" ]; then
+            release_branch=production  
+          elif [ "${{ inputs.release_env }}" == *"hotfix/"* ]; then
+            release_branch=production
+          elif [ "${{ inputs.release_env }}" == "test" ]; then
+            release_branch=test
+          else
+            release_branch=null
           fi
           
           echo "repo=$repo" >> $GITHUB_OUTPUT
           echo "branch=$branch" >> $GITHUB_OUTPUT
+          echo "release_branch=$release_branch" >> $GITHUB_OUTPUT
+          echo "release_env=$release_env" >> $GITHUB_OUTPUT
+          echo "release_version=$release_version" >> $GITHUB_OUTPUT
+          echo "project=$project" >> $GITHUB_OUTPUT
+
+      - name: Fail if environment is unknown
+        if: ${{ steps.set_env.outputs.release_env == null }}
+        run: |
+          echo "Environment is not QA, PROD, or HOTFIX. Failing the workflow."
+          exit 1
 
   create-github-release:
     name: Create release
+    if: ${{ inputs.jira_key }}  != "IS360"
     needs: [initial_setting]
     environment: main
     runs-on: ubuntu-latest
@@ -93,6 +131,54 @@ jobs:
         run: |
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
+
+  create-release-and-trigger-deployment:
+    name: create release and trigger deployment
+    if: ${{ inputs.jira_key }}  == "IS360"
+    needs: [initial_setting]
+    environment: ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          # - repo: ${{ needs.initial_setting.outputs.backend_repo }}
+          # - repo: ${{ needs.initial_setting.outputs.frontend_repo }}
+          - repo: ${{ needs.initial_setting.outputs.test_repo }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: cloud-development-team/${{ matrix.repo }}
+          ref: refs/heads/${{ needs.initial_setting.outputs.release_branch }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Trigger Project Workflow
+        run: |
+          curl -X POST -H "Accept: application/vnd.github.v3+json" \
+          -H "Authorization: token ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}" \
+          https://api.github.com/repos/cloud-development-team/${{ matrix.repo }}/dispatches \
+          -d '{"event_type":"${{ needs.initial_setting.outputs.project}}_jira_release","client_payload":{"release_version":"${{ needs.initial_setting.outputs.release_version }}", "release_env":"${{ needs.initial_setting.outputs.release_env }}"}}'
+
+      - name: Create Github Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+        with:
+          tag_name: ${{ inputs.release_version }}
+          release_name: ${{ inputs.release_version }}
+          repo: ${{ matrix.repo }}
+          commitish: ${{ needs.initial_setting.outputs.release_branch }}
+          body: |
+            🤖 This release was created by ${{ github.event.sender.login }}.
+            - More information about this release can be found in Jira Release. 🔍
+            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
+            - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
+
+      - name: Github Release Result
+        run: |
+          echo "🔍 Check the release results"
+          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}"
 
   sp012-gateway:
     if: ${{ inputs.jira_key == 'RMR' }}
