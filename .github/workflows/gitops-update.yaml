@@ -86,7 +86,7 @@ jobs:
             ' ./gitops/${{ inputs.yaml_path }}
 
       - name: DEV Update detailed version information
-        if: ${{ inputs.application_name}} != "" && ${{ inputs.json_path == 'dev_version.yaml' }}
+        if: ${{ inputs.application_name != '' && inputs.json_path == 'dev_version.yaml' }}
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
@@ -96,7 +96,7 @@ jobs:
             ' ./gitops/${{ inputs.json_path }}
 
       - name: QA/Prod Update detailed version information
-        if: ${{ inputs.application_name}} != "" && ${{ inputs.json_path != 'dev_version.yaml' }}
+        if: ${{ inputs.application_name != '' && inputs.json_path != 'dev_version.yaml' }}
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
