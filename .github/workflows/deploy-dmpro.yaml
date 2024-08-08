@@ -36,11 +36,11 @@ on:
         description: "dmpro qa aws account id"
         type: string
         default: "027903527077"
-      dev_fe_bucket:
+      qa_fe_bucket:
         required: false
         description: "dmpro dev FE bucket"
         type: string
-        default: "dmpro013-static-dev-an2-001"
+        default: "dmpro013-static-qa-ue1-001"
       prod_aws_account:
         required: false
         description: "dmpro prod aws account id"
@@ -118,6 +118,27 @@ jobs:
           git commit -m "cd: deploy dmpro dev test for ${{ inputs.release_version }}" && \
           git push origin main
         continue-on-error: true
+
+      # Login To HVC_Admin_Automation for Deploy
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+          role-session-name: GitHub-Actions-Assume
+          aws-region: us-east-1
+
+      # Assume to Each Account as AWSControlTowerExecution
+      - name: Push build artifact to S3 Bucket and invalidation CloudFront
+        run: |
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+
+          aws s3 sync s3://${{ inputs.qa_fe_bucket }}/beforejira/_next/static s3://${{ inputs.qa_fe_bucket }}/_next/static  --delete
+          aws s3 sync s3://${{ inputs.qa_fe_bucket }}/beforejira/public s3://${{ inputs.qa_fe_bucket }}/public --delete
+
+          aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cf_distribution_id }} --paths "/*"
   
   prod-deploy:
     name: DMPro PROD Deploy
@@ -187,8 +208,6 @@ jobs:
           git push origin main
         continue-on-error: true
       
-      
-
       # # Login To HVC_Admin_Automation for Deploy
       # - name: Configure AWS credentials
       #   uses: aws-actions/configure-aws-credentials@v4
@@ -201,13 +220,13 @@ jobs:
       # - name: Push build artifact to S3 Bucket and invalidation CloudFront
       #   run: |
       #     # Assume Role using an Automation Key
-      #     identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
+      #     identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
       #     export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
       #     export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
       #     export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
-      #     # aws s3 sync s3://${{ inputs.dev_fe_bucket }}/predeploy/_next/static s3://${{ inputs.dev_fe_bucket }}/_next/static  --delete
-      #     # aws s3 sync s3://${{ inputs.dev_fe_bucket }}/predeploy/public s3://${{ inputs.dev_fe_bucket }}/public --delete
+      #     # aws s3 sync s3://${{ inputs.prod_fe_bucket }}/_next/static s3://${{ inputs.prod_fe_bucket }}/_next/static  --delete
+      #     # aws s3 sync s3://${{ inputs.qa_fe_bucket }}/public s3://${{ inputs.dev_fe_bucket }}/public --delete
 
       #     # Setting CloudFront
       #     aws cloudfront create-invalidation --distribution-id ${{ inputs.dev_cf_distribution_id }} --paths "/*"
