@@ -84,8 +84,8 @@ jobs:
           echo "repo=$repo" >> $GITHUB_OUTPUT
           echo "branch=$branch" >> $GITHUB_OUTPUT
           echo "release_branch=$release_branch" >> $GITHUB_OUTPUT
-          echo "release_env=$release_env" >> $GITHUB_OUTPUT
-          echo "release_version=$release_version" >> $GITHUB_OUTPUT
+          echo "release_env=${{ inputs.release_env }}" >> $GITHUB_OUTPUT
+          echo "release_version=${{ inputs.release_version }}" >> $GITHUB_OUTPUT
           echo "project=$project" >> $GITHUB_OUTPUT
 
       - name: Fail if environment is unknown
