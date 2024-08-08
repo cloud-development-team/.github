@@ -76,7 +76,7 @@ jobs:
           elif [ "${{ inputs.release_env }}" == *"hotfix/"* ]; then
             release_branch=production
           elif [ "${{ inputs.release_env }}" == "test_sm" ]; then
-            release_branch=test
+            release_branch=main
           else
             release_branch=null
           fi
