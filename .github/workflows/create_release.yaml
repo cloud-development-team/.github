@@ -55,10 +55,10 @@ jobs:
               branch=release
             fi
           #elif [ ${{ inputs.jira_key }}  == "CPD" ]; then
-          elif [ ${{ inputs.jira_key }}  == "KDOG" ]; then
+          elif [ ${{ inputs.jira_key }}  == "KDOG" ] && [ ${{inputs.release_env}} != "test_sm" ]; then
             repo=dmpro-gitops
             branch=main
-          elif [ ${{ inputs.jira_key }}  == "IS360" ]; then
+          elif [ "${{ inputs.jira_key }}" == "KDOG" ] && [ "${{ inputs.release_env }}" == "test_sm" ]; then
             backend_repo=sightmind-backend-mono
             frontend-repo=hc-frontend-mono
             test-repo=sightmind_jira_test
@@ -75,7 +75,7 @@ jobs:
             release_branch=production  
           elif [ "${{ inputs.release_env }}" == *"hotfix/"* ]; then
             release_branch=production
-          elif [ "${{ inputs.release_env }}" == "test" ]; then
+          elif [ "${{ inputs.release_env }}" == "test_sm" ]; then
             release_branch=test
           else
             release_branch=null
