@@ -96,7 +96,7 @@ jobs:
 
   create-github-release:
     name: Create release
-    if: ${{ inputs.jira_key }}  != "IS360"
+    if: ${{ inputs.release_env != 'test_sm' }}
     needs: [initial_setting]
     environment: main
     runs-on: ubuntu-latest
@@ -134,7 +134,7 @@ jobs:
 
   create-release-and-trigger-deployment:
     name: create release and trigger deployment
-    if: ${{ inputs.jira_key }}  == "IS360"
+    if: ${{ inputs.jira_key == 'KDOG' && inputs.release_env == 'test_sm' }}
     needs: [initial_setting]
     environment: ${{ github.ref_name }}
     runs-on: ubuntu-latest
