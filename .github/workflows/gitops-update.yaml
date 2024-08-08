@@ -61,22 +61,42 @@ jobs:
           ref: ${{ inputs.repository_ref }}
           token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
 
-      - name: Update BE server version.json information(main)
-        if: ${{ inputs.application_name != 'dmpro-frontend-mono'}}
+      - name: QA/Prod Update BE version.json(main)
+        if: ${{ inputs.application_name != 'dmpro-frontend-mono' && inputs.json_path != 'dev_version.yaml'}}
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
             yq -i '.["BackendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' ./gitops/${{ inputs.json_path }}
 
-      - name: Update FE server version.json information(main)
-        if: ${{ inputs.application_name == 'dmpro-frontend-mono'}}
+      - name: QA/Prod Update FE version.json(main)
+        if: ${{ inputs.application_name == 'dmpro-frontend-mono' && inputs.json_path != 'dev_version.yaml'}}
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
             yq -i '.["FrontendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' ./gitops/${{ inputs.json_path }}
 
-      - name: Update version information in version file(detail)
-        if: ${{ inputs.application_name }} != ""
+      - name: DEV Deploy - Update image
+        if: ${{ inputs.json_path == 'dev_version.yaml'}}
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '
+              .image.repository = "${{ inputs.image_name }}" |
+              .image.tag = "${{ inputs.image_tag }}"
+            ' ./gitops/${{ inputs.yaml_path }}
+
+      - name: DEV Update detailed version information
+        if: ${{ inputs.application_name != "" && inputs.json_path != 'dev_version.yaml' }}
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '
+              .${{ inputs.application_name }}.image-tag = "${{ inputs.image_tag }}" |
+              .${{ inputs.application_name }}.commit-sha = "${{ steps.github-var.outputs.sha_short }}"
+            ' ./gitops/${{ inputs.json_path }}
+
+      - name: QA/Prod Update detailed version information
+        if: ${{ inputs.application_name != "" && inputs.json_path != 'dev_version.yaml' }}
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
