@@ -122,8 +122,7 @@ jobs:
           commitish: ${{ needs.initial_setting.outputs.branch }}
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
-            - More information about this release can be found in Jira Release. 🔍
-            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
+            - Released By JIRA 🔍
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
 
       - name: Github Release Result
