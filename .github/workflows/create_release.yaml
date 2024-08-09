@@ -138,6 +138,7 @@ jobs:
     environment: main
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1
       matrix:
         include:
           # - repo: ${{ needs.initial_setting.outputs.backend_repo }}
