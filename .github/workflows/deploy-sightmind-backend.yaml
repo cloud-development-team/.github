@@ -75,7 +75,7 @@ jobs:
         with:
           repository: cloud-development-team/${{ inputs.backend_repo }}
           ref: refs/heads/${{ inputs.target_branch}}
-          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Setup Node.js
         if: inputs.target_branch != 'production'
