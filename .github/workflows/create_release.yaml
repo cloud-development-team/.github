@@ -152,6 +152,7 @@ jobs:
           repository: cloud-development-team/${{ matrix.repo }}
           ref: refs/heads/${{ needs.initial_setting.outputs.target_branch }}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+          fetch-depth: 0
 
       - name: Create Github Release
         uses: actions/create-release@v1
