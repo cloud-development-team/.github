@@ -62,7 +62,7 @@ jobs:
             backend_repo=sightmind-backend-mono
             frontend_repo=hc-frontend-mono
             test_repo=sightmind_jira_test
-            repo=sightmind_jira_test
+            repo=sightmind-backend-mono
             project=sm
             branch=main
 
