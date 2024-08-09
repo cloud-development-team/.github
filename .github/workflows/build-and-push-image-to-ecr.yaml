@@ -7,6 +7,10 @@ on:
         description: "Version number from deployment"
         value: ${{ jobs.create-tag.outputs.version }}
     inputs:
+      image_name:
+        required: false
+        description: "Name of docker registry to publish. Does not need ghcr.io/cloud-development-team/ in front."
+        type: string
       image_tag:
         required: false
         description: "Additional tag for cretead image"
