@@ -1,230 +1,116 @@
-name: DMPro Deploy
-run-name: DMPro Deploy - ${{ inputs.release_env }}
-
-permissions: write-all
+# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+name: GitOps Update container image
 
 on:
   workflow_call:
     inputs:
-      release_version:
-        description: 'Release Version'
+      repository_name:
         required: true
-        default: ""
+        description: "Name of repository"
         type: string
-      release_env:
-        description: 'Release environment'
+      repository_ref:
+        required: false
+        description: "Ref value of repository"
+        type: string
+        default: "main"
+      image_name:
         required: true
-        default: ""
+        description: "Name of container registry and image"
         type: string
-      release_repo:
-        description: 'Release Repository'
+      image_tag:
         required: true
-        default: ""
-        type: string                  
-      qa_aws_account:
-        required: false
-        description: "dmpro qa aws account id"
+        description: "Tag of image"
         type: string
-        default: "027903527077"
-      prod_aws_account:
-        required: false
-        description: "dmpro prod aws account id"
+      yaml_path:
+        required: true
+        description: "Path to the yaml file defined for the application"
         type: string
-        default: "390418701413"
-      qa_fe_bucket:
-        required: false
-        description: "dmpro qa FE bucket"
+      json_path:
+        required: true
+        description: "Path to the yaml file defined for the application"
         type: string
-        default: "dmpro013-static-qa-ue1-001"
-      prod_pre_fe_bucket:
+      application_name:
         required: false
-        description: "dmpro prod pre FE bucket"
+        description: "Name of actual application"
         type: string
-        default: "dmpro013-pre-static-prod-ue1-001"
-      prod_fe_bucket:
+        default: "null"
+    secrets:
+      GH_USERNAME:
+        required: true
+      GH_MANAGEPACKAGETOKEN:
         required: false
-        description: "dmpro prod FE bucket"
-        type: string
-        default: "dmpro013-static-prod-ue1-001"
-      qa_cf_distribution_id:
-        required: false
-        description: "qa_cf_distribution_id"
-        type: string
-        default: "EOTSDFTM2NPH0"
-      prod_cf_distribution_id:
-        required: false
-        description: "dev_cf_distribution_id"
-        type: string
-        default: "E216BRXBWEUM5Z"
+        description: "If not provided, the repo creds will be used."
 
 jobs:
-  qa-deploy:
-    name: DMPro QA Deploy
-    if: ${{ inputs.release_env == 'QA' }}
-    environment: main
+  gitops-update:
     runs-on: ubuntu-latest
+    name: GitOps Update
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
+
+      - name: Set short commit sha to output
+        id: github-var
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Checkout state repo
+        uses: actions/checkout@v3
         with:
-          fetch-depth: 0
-          repository: cloud-development-team/${{ inputs.release_repo }}
-          ref: refs/heads/main
-          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-          
-      - name: Update version.json information
+          repository: ${{ inputs.repository_name }}
+          path: ./gitops
+          ref: ${{ inputs.repository_ref }}
+          token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+
+      - name: QA/Prod Update BE version.json(main)
+        if: ${{ inputs.application_name != 'dmpro-frontend-mono' && inputs.json_path != 'dev_version.yaml'}}
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
+            yq -i '.["BackendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' ./gitops/${{ inputs.json_path }}
 
-      - name: Get Time
-        id: time
-        uses: nanzm/get-time-action@master
-        with:
-          timeZone: UTC-9
-          format: 'YYYY-MM-DD HH:mm:ss'
-
-      - name: Update Release date to version.json information
+      - name: QA/Prod Update FE version.json(main)
+        if: ${{ inputs.application_name == 'dmpro-frontend-mono' && inputs.json_path != 'dev_version.yaml'}}
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
+            yq -i '.["FrontendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' ./gitops/${{ inputs.json_path }}
 
-      - name: Install yq
-        run: |
-          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
-          chmod +x /usr/local/bin/yq
+      - name: DEV Deploy - Update image
+        if: ${{ inputs.json_path == 'dev_version.yaml'}}
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '
+              .image.repository = "${{ inputs.image_name }}" |
+              .image.tag = "${{ inputs.image_tag }}"
+            ' ./gitops/${{ inputs.yaml_path }}
 
-      - name: Deploy
-        run: |
-          while IFS= read -r line; do
-            if [[ "${line:0:1}" != " " ]]; then
-              service_name=$(echo "$line" | awk -F':' '{print $1}')
-            elif [[ $line == *"image-tag"* ]]; then
-              image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
-              yq -i '
-                .image.tag = "'$image_tag'"
-              ' ./$service_name/env/qa.yaml || true
-            fi
-          done < qa_version.yaml
+      - name: DEV Update detailed version information
+        if: ${{ inputs.application_name != 'null' && inputs.json_path == 'dev_version.yaml' }}
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '
+              .${{ inputs.application_name }}.image-tag = "${{ inputs.image_tag }}" |
+              .${{ inputs.application_name }}.commit-sha = "${{ steps.github-var.outputs.sha_short }}"
+            ' ./gitops/${{ inputs.json_path }}
+
+      - name: QA/Prod Update detailed version information
+        if: ${{ inputs.application_name != 'null' && inputs.json_path != 'dev_version.yaml' }}
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '
+              .${{ inputs.application_name }}.image-tag = "${{ inputs.image_tag }}" |
+              .${{ inputs.application_name }}.commit-sha = "${{ steps.github-var.outputs.sha_short }}"
+            ' ./gitops/${{ inputs.yaml_path }}
 
       - name: Commit changes
+        working-directory: ./gitops
         run: |
           git config user.name "GitHub Actions Bot" && \
           git config user.email "<>" && \
           git add --all
-          git commit -m "cd: deploy dmpro dev test for ${{ inputs.release_version }}" && \
+          git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
           git push origin main
         continue-on-error: true
-
-      # # Login To HVC_Admin_Automation for Deploy
-      # - name: Configure AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
-      #     role-session-name: GitHub-Actions-Assume
-      #     aws-region: us-east-1
-
-      # # Assume to Each Account as AWSControlTowerExecution
-      # - name: Push build artifact to S3 Bucket and invalidation CloudFront
-      #   run: |
-      #     identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
-      #     export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
-      #     export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
-      #     export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-
-      #     aws s3 sync s3://${{ inputs.qa_fe_bucket }}/beforejira/_next/static s3://${{ inputs.qa_fe_bucket }}/_next/static  --delete
-      #     aws s3 sync s3://${{ inputs.qa_fe_bucket }}/beforejira/public s3://${{ inputs.qa_fe_bucket }}/public --delete
-
-      #     aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cf_distribution_id }} --paths "/*"
-  
-  prod-deploy:
-    name: DMPro PROD Deploy
-    if: ${{ inputs.release_env == 'PROD' }}
-    environment: main
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          repository: cloud-development-team/${{ inputs.release_repo }}
-          ref: refs/heads/main
-          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-
-      - name: Copy the qa_version.yaml file to prod_version.yaml file.
-        run: |
-          pwd
-          ls -la
-          cp dev_version.yaml qa_version.yaml
-          cp dev_version.json qa_version.json
-          
-      - name: Update version.json information
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
-
-      - name: Get Time
-        id: time
-        uses: nanzm/get-time-action@master
-        with:
-          timeZone: UTC-9
-          format: 'YYYY-MM-DD HH:mm:ss'
-
-      - name: Update Release date to version.json information
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
-
-      - name: Install yq
-        run: |
-          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
-          chmod +x /usr/local/bin/yq
-
-      - name: Deploy
-        run: |
-          while IFS= read -r line; do
-            if [[ "${line:0:1}" != " " ]]; then
-              service_name=$(echo "$line" | awk -F':' '{print $1}')
-            elif [[ $line == *"image-tag"* ]]; then
-              image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
-              yq -i '
-                .image.tag = "'$image_tag'"
-              ' ./$service_name/env/qa.yaml || true
-            fi
-          done < qa_version.yaml
-
-      - name: Commit changes
-        run: |
-          git config user.name "GitHub Actions Bot" && \
-          git config user.email "<>" && \
-          git add --all
-          git commit -m "cd: deploy dmpro dev test for ${{ inputs.release_version }}" && \
-          git push origin main
-        continue-on-error: true
-      
-      # # Login To HVC_Admin_Automation for Deploy
-      # - name: Configure AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
-      #     role-session-name: GitHub-Actions-Assume
-      #     aws-region: us-east-1
-
-      # # Assume to Each Account as AWSControlTowerExecution
-      # - name: Push build artifact to S3 Bucket and invalidation CloudFront
-      #   run: |
-      #     # Assume Role using an Automation Key
-      #     identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
-      #     export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
-      #     export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
-      #     export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-
-      #     # aws s3 sync s3://${{ inputs.prod_fe_bucket }}/_next/static s3://${{ inputs.prod_fe_bucket }}/_next/static  --delete
-      #     # aws s3 sync s3://${{ inputs.qa_fe_bucket }}/public s3://${{ inputs.dev_fe_bucket }}/public --delete
-
-      #     # Setting CloudFront
-      #     aws cloudfront create-invalidation --distribution-id ${{ inputs.dev_cf_distribution_id }} --paths "/*"
