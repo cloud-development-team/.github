@@ -30,50 +30,26 @@ on:
         required: true
         default: ""
         type: string
-      release_repo:
-        description: 'Release Repository'
+      frontend_repo:
+        description: 'Frontend Repository'
         required: true
         default: ""
         type: string
- 
-    secrets:
-      CODEFREEZE:
+      backend_repo:
+        description: 'Backend Repository'
         required: true
-
-env:
-  CODEFREEZE: ${{ secrets.CODEFREEZE }}
-  AUTOMATION_GH_USERNAME: ${{ vars.AUTOMATION_GH_USERNAME }}
-  GH_PAT_AUTOMATION: ${{ secrets.GH_PAT_AUTOMATION_SEMANTIC_RELEASE }} #${{ secrets.GH_PAT_AUTOMATION }}
+        default: ""
+        type: string
+      target_branch:
+          description: 'Target Branch'
+          required: true
+          default: ""
+          type: string
 
 jobs:
-  determine-environment:
-    name: Determine Environment
-    runs-on: ubuntu-latest
-    outputs:
-      deployment_environment: ${{ steps.set-env.outputs.deployment_environment }}
-    steps:
-      - name: Set environment
-        id: set-env
-        run: |
-          if [[ "${{ inputs.release_env }}" == "QA" ]]; then
-            echo "deployment_environment=release" >> $GITHUB_OUTPUT
-          elif [[ "${{ inputs.release_env }}" == "PROD" ]]; then
-            echo "deployment_environment=production" >> $GITHUB_OUTPUT
-          elif [[ "${{ inputs.release_env }}" == *"hotfix/"* ]]; then
-            echo "deployment_environment=production" >> $GITHUB_OUTPUT
-          else
-            echo "deployment_environment=unknown" >> $GITHUB_OUTPUT
-
-      - name: Fail if environment is unknown
-        if: ${{ steps.set-env.outputs.deployment_environment == 'unknown' }}
-        run: |
-          echo "Environment is unknown. Failing the workflow."
-          exit 1
-
   init:
     runs-on: ubuntu-latest
-    needs: determine-environment
-    environment: ${{ needs.determine-environment.outputs.deployment_environment }}
+    environment: sm_${{ inputs.target_branch }}
     
     outputs:
       region: ${{ steps.set_env.outputs.region }}
@@ -92,7 +68,7 @@ jobs:
     name: Run Node Build
     runs-on: ubuntu-latest
     environment: aws
-    needs: [init, determine-environment]
+    needs: [init]
     strategy:
       matrix:
         node-version: ${{ fromJSON(inputs.node_versions) }}
@@ -103,13 +79,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        if: needs.determine-environment.outputs.deployment_environment != 'production'
+        if: inputs.target_branch != 'production'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
 
       - name: Cache npm dependencies
-        if: needs.determine-environment.outputs.deployment_environment != 'production'
+        if: inputs.target_branch != 'production'
         uses: actions/cache@v4
         id: npm-cache
         with:
@@ -119,7 +95,7 @@ jobs:
             ${{ runner.os }}-node-${{ matrix.node-version }}-
 
       - name: Login to NPM
-        if: needs.determine-environment.outputs.deployment_environment != 'production'
+        if: inputs.target_branch != 'production'
         working-directory: ${{ inputs.working_dir }}
         run: |        
           npm install -g npm-cli-login 
@@ -132,13 +108,13 @@ jobs:
         run: npm --version
 
       - name: Install dependencies
-        if: needs.determine-environment.outputs.deployment_environment != 'production' && steps.npm-cache.outputs.cache-hit != 'true'
+        if: inputs.target_branch != 'production' && steps.npm-cache.outputs.cache-hit != 'true'
         working-directory: ${{ inputs.working_dir }}
         run: |
           npm install
 
       # - name: Build
-      #   if: needs.determine-environment.outputs.deployment_environment != 'production'
+      #   if: inputs.target_branch != 'production'
       #   working-directory: ${{ inputs.working_dir }}
       #   run: |
       #     npm run build
@@ -153,7 +129,7 @@ jobs:
       #     aws-region: ${{ needs.init.outputs.region }}
 
       # - name: Zip build output
-      #   if: needs.determine-environment.outputs.deployment_environment != 'production'
+      #   if: inputs.target_branch != 'production'
       #   working-directory: ${{ inputs.working_dir }}
       #   run: |
       #     zip -qry deploy.zip .
@@ -168,7 +144,7 @@ jobs:
       #     export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
       #     # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
-      #     if [ ${{ needs.determine-environment.outputs.deployment_environment }}  == "production" ]; then
+      #     if [ ${{ inputs.target_branch }}  == "production" ]; then
       #       echo "production upload"
       #       aws s3 cp s3://sm018-cicd-q-ue1/backend/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors 
       #       # aws s3 cp s3://sm018-hotfix-cicd-d-an2/backend/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors 
@@ -180,7 +156,7 @@ jobs:
 
 
   # versioning:
-  #   if: ${{ needs.determine-environment.outputs.deployment_environment == 'release' }}
+  #   if: ${{ inputs.target_branch == 'release' }}
   #   outputs:
   #     version: ${{ steps.version.outputs.version }}
   #     previous_version: ${{ steps.version.outputs.previous_version }}
@@ -205,7 +181,7 @@ jobs:
   #         search_commit_body: true
   
   # release-gitops:
-  #   if: ${{ needs.determine-environment.outputs.deployment_environment == 'release' }}
+  #   if: ${{ inputs.target_branch == 'release' }}
   #   name: GitOps Release
   #   needs: [versioning]
   #   uses: cloud-development-team/.github/.github/workflows/gitops-ver-release.yaml@main
@@ -216,7 +192,7 @@ jobs:
   #   secrets: inherit
 
   # create-release:
-  #   if: ${{ needs.determine-environment.outputs.deployment_environment == 'release' }}
+  #   if: ${{ inputs.target_branch == 'release' }}
   #   name: GitHub Release
   #   needs: [versioning, release-gitops]
   #   runs-on: ubuntu-latest
