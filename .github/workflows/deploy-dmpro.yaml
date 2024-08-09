@@ -31,6 +31,7 @@ on:
         description: "dmpro prod aws account id"
         type: string
         default: "390418701413"
+      qa_fe_bucket:
         required: false
         description: "dmpro qa FE bucket"
         type: string
