@@ -96,6 +96,7 @@ jobs:
 
   create-github-release:
     name: Create release
+    if: ${{ inputs.release_env != 'test_sm' }}
     needs: [initial_setting]
     environment: main
     runs-on: ubuntu-latest
