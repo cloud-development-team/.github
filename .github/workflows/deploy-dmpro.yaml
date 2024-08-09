@@ -21,41 +21,40 @@ on:
         required: true
         default: ""
         type: string                  
-      qa_version_json_path:
-        required: false
-        description: "Path to the json file described all version of application"
-        type: string
-        default: "qa_version.json"
-      prod_version_json_path:
-        required: false
-        description: "Path to the json file described all version of application"
-        type: string
-        default: "prod_version.json"
       qa_aws_account:
         required: false
         description: "dmpro qa aws account id"
         type: string
         default: "027903527077"
-      qa_fe_bucket:
-        required: false
-        description: "dmpro dev FE bucket"
-        type: string
-        default: "dmpro013-static-qa-ue1-001"
       prod_aws_account:
         required: false
         description: "dmpro prod aws account id"
         type: string
         default: "390418701413"
+        required: false
+        description: "dmpro qa FE bucket"
+        type: string
+        default: "dmpro013-static-qa-ue1-001"
+      prod_pre_fe_bucket:
+        required: false
+        description: "dmpro prod pre FE bucket"
+        type: string
+        default: "dmpro013-pre-static-prod-ue1-001"
+      prod_fe_bucket:
+        required: false
+        description: "dmpro prod FE bucket"
+        type: string
+        default: "dmpro013-static-prod-ue1-001"
       qa_cf_distribution_id:
         required: false
         description: "qa_cf_distribution_id"
         type: string
         default: "EOTSDFTM2NPH0"
-      dev_cf_distribution_id:
+      prod_cf_distribution_id:
         required: false
         description: "dev_cf_distribution_id"
         type: string
-        default: "E3R907T3RG686T"
+        default: "E216BRXBWEUM5Z"
 
 jobs:
   qa-deploy:
@@ -73,11 +72,10 @@ jobs:
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
           
       - name: Update version.json information
-        if: ${{ inputs.application_name }} != ""
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' dev_version.json     
+            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
 
       - name: Get Time
         id: time
@@ -90,7 +88,7 @@ jobs:
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' dev_version.json
+            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
 
       - name: Install yq
         run: |
@@ -106,9 +104,9 @@ jobs:
               image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
               yq -i '
                 .image.tag = "'$image_tag'"
-              ' ./$service_name/env/dev.yaml || true
+              ' ./$service_name/env/qa.yaml || true
             fi
-          done < dev_version.yaml
+          done < qa_version.yaml
 
       - name: Commit changes
         run: |
@@ -119,26 +117,26 @@ jobs:
           git push origin main
         continue-on-error: true
 
-      # Login To HVC_Admin_Automation for Deploy
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
-          role-session-name: GitHub-Actions-Assume
-          aws-region: us-east-1
+      # # Login To HVC_Admin_Automation for Deploy
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+      #     role-session-name: GitHub-Actions-Assume
+      #     aws-region: us-east-1
 
-      # Assume to Each Account as AWSControlTowerExecution
-      - name: Push build artifact to S3 Bucket and invalidation CloudFront
-        run: |
-          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
-          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+      # # Assume to Each Account as AWSControlTowerExecution
+      # - name: Push build artifact to S3 Bucket and invalidation CloudFront
+      #   run: |
+      #     identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
+      #     export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+      #     export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+      #     export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
-          aws s3 sync s3://${{ inputs.qa_fe_bucket }}/beforejira/_next/static s3://${{ inputs.qa_fe_bucket }}/_next/static  --delete
-          aws s3 sync s3://${{ inputs.qa_fe_bucket }}/beforejira/public s3://${{ inputs.qa_fe_bucket }}/public --delete
+      #     aws s3 sync s3://${{ inputs.qa_fe_bucket }}/beforejira/_next/static s3://${{ inputs.qa_fe_bucket }}/_next/static  --delete
+      #     aws s3 sync s3://${{ inputs.qa_fe_bucket }}/beforejira/public s3://${{ inputs.qa_fe_bucket }}/public --delete
 
-          aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cf_distribution_id }} --paths "/*"
+      #     aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cf_distribution_id }} --paths "/*"
   
   prod-deploy:
     name: DMPro PROD Deploy
@@ -162,7 +160,6 @@ jobs:
           cp dev_version.json qa_version.json
           
       - name: Update version.json information
-        if: ${{ inputs.application_name }} != ""
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
