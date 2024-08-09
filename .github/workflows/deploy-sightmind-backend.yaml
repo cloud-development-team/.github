@@ -46,6 +46,9 @@ on:
           default: ""
           type: string
 
+env:
+  GH_PAT_AUTOMATION: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+
 jobs:
   init:
     runs-on: ubuntu-latest
@@ -67,7 +70,7 @@ jobs:
   pnpm-build:
     name: Run Node Build
     runs-on: ubuntu-latest
-    environment: aws
+    environment: sm_aws
     needs: [init]
     strategy:
       matrix:
@@ -153,112 +156,3 @@ jobs:
       #     fi
           
       #     aws sts get-caller-identity
-
-
-  # versioning:
-  #   if: ${{ inputs.target_branch == 'release' }}
-  #   outputs:
-  #     version: ${{ steps.version.outputs.version }}
-  #     previous_version: ${{ steps.version.outputs.previous_version }}
-  #   name: Semantic Versioning
-  #   needs: [pnpm-build]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Semantic Version
-  #       id: version
-  #       uses: paulhatch/semantic-version@v5.4.0
-  #       with:
-  #         major_pattern: "(MAJOR)"
-  #         minor_pattern: "(MINOR)"
-  #         version_format: "sm${major}.${minor}.${patch}"
-  #         tag_prefix: "sm"
-  #         bump_each_commit: false
-  #         search_commit_body: true
-  
-  # release-gitops:
-  #   if: ${{ inputs.target_branch == 'release' }}
-  #   name: GitOps Release
-  #   needs: [versioning]
-  #   uses: cloud-development-team/.github/.github/workflows/gitops-ver-release.yaml@main
-  #   with:
-  #     repository_name: "cloud-development-team/global-infra-version"
-  #     build_ver: ${{ needs.versioning.outputs.version }}
-  #     application_name: "sightmind-backend-mono"
-  #   secrets: inherit
-
-  # create-release:
-  #   if: ${{ inputs.target_branch == 'release' }}
-  #   name: GitHub Release
-  #   needs: [versioning, release-gitops]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Build Release Changelog
-  #       id: release_changelog
-  #       uses: mikepenz/release-changelog-builder-action@v4
-  #       with:
-  #         toTag: ${{ needs.versioning.outputs.version }}
-  #         fromTag: sm${{ needs.versioning.outputs.previous_version }}
-  #         configurationJson: |
-  #           {
-  #             "categories": [
-  #               {
-  #                   "title": "## 🚀 Feature",
-  #                   "rules": [
-  #                     {
-  #                       "pattern": "feat",
-  #                       "on_property": "title",
-  #                       "method": "match"
-  #                     }
-  #                   ]
-  #               },
-  #               {
-  #                   "title": "## 🐛 Fix",
-  #                   "rules": [
-  #                     {
-  #                       "pattern": "fix",
-  #                       "on_property": "title",
-  #                       "method": "match"
-  #                     }
-  #                   ]
-  #               },
-  #               {
-  #                 "title": "## 📦 Uncategorized",
-  #                 "rules": [
-  #                   {
-  #                     "pattern": "^(?!.*\\b(feat|fix)\\b).*$",
-  #                     "on_property": "title",
-  #                     "method": "match"
-  #                   }
-  #                 ]
-  #               }
-  #             ]
-  #           }
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  #     - name: Create Release
-  #       id: create_release
-  #       uses: softprops/action-gh-release@v2
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-  #       with:
-  #         tag_name: ${{ needs.versioning.outputs.version }}
-  #         name: ${{ needs.versioning.outputs.version }}
-  #         body: ${{ steps.release_changelog.outputs.changelog }}
-
-  #     - name: Add Changelog Report to Release
-  #       uses: irongut/EditRelease@v1.2.0
-  #       with:
-  #         token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-  #         id: ${{ steps.create_release.outputs.id }}
-  #         body: ${{ steps.release_changelog.outputs.changelog }}

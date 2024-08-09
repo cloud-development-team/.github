@@ -61,10 +61,8 @@ jobs:
           elif [ "${{ inputs.jira_key }}" == "KDOG" ] && [ "${{ inputs.release_env }}" == "test_sm" ]; then
             backend_repo=sightmind-backend-mono
             frontend_repo=hc-frontend-mono
-            test_repo=sightmind_jira_test
-            repo=sightmind-backend-mono
+            test_repo=sightmind-backend-mono
             project=sm
-            branch=main
 
             echo "backend_repo=$backend_repo" >> $GITHUB_OUTPUT
             echo "frontend_repo=$frontend_repo" >> $GITHUB_OUTPUT
@@ -103,7 +101,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current repository
-        if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'test_sm' }}
+        if: ${{ inputs.release_env == 'QA' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -112,7 +110,7 @@ jobs:
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Create Github Release
-        if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'test_sm' }}
+        if: ${{ inputs.release_env == 'QA' }}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
@@ -128,52 +126,52 @@ jobs:
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
 
       - name: Github Release Result
-        if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'test_sm' }}
+        if: ${{ inputs.release_env == 'QA' }}
         run: |
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
 
-  # parallel-create-release:
-  #   name: parallel create release
-  #   if: ${{ inputs.jira_key == 'KDOG' && inputs.release_env == 'test_sm' }}
-  #   needs: [initial_setting]
-  #   environment: main
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     max-parallel: 1
-  #     matrix:
-  #       include:
-  #         # - repo: ${{ needs.initial_setting.outputs.backend_repo }}
-  #         # - repo: ${{ needs.initial_setting.outputs.frontend_repo }}
-  #         - repo: ${{ needs.initial_setting.outputs.test_repo }}
+  parallel-create-release:
+    name: parallel create release
+    if: ${{ inputs.jira_key == 'KDOG' && inputs.release_env == 'test_sm' }}
+    needs: [initial_setting]
+    environment: main
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        include:
+          # - repo: ${{ needs.initial_setting.outputs.backend_repo }}
+          # - repo: ${{ needs.initial_setting.outputs.frontend_repo }}
+          - repo: ${{ needs.initial_setting.outputs.test_repo }}
 
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #       with:
-  #         repository: cloud-development-team/${{ matrix.repo }}
-  #         ref: refs/heads/${{ needs.initial_setting.outputs.target_branch }}
-  #         token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: cloud-development-team/${{ matrix.repo }}
+          ref: refs/heads/${{ needs.initial_setting.outputs.target_branch }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
-  #     - name: Create Github Release
-  #       uses: actions/create-release@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-  #       with:
-  #         tag_name: ${{needs.initial_setting.outputs.project}}_${{ inputs.release_version }}
-  #         release_name: ${{needs.initial_setting.outputs.project}}_${{ inputs.release_version }}
-  #         repo: ${{ matrix.repo }}
-  #         commitish: ${{ needs.initial_setting.outputs.target_branch }}
-  #         body: |
-  #           🤖 This release was created by ${{ github.event.sender.login }}.
-  #           - More information about this release can be found in Jira Release. 🔍
-  #           - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
-  #           - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
+      - name: Create Github Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+        with:
+          tag_name: ${{needs.initial_setting.outputs.project}}_${{ inputs.release_version }}
+          release_name: ${{needs.initial_setting.outputs.project}}_${{ inputs.release_version }}
+          repo: ${{ matrix.repo }}
+          commitish: ${{ needs.initial_setting.outputs.target_branch }}
+          body: |
+            🤖 This release was created by ${{ github.event.sender.login }}.
+            - More information about this release can be found in Jira Release. 🔍
+            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
+            - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
 
-  #     - name: Github Release Result
-  #       run: |
-  #         echo "🔍 Check the release results"
-  #         echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}"
+      - name: Github Release Result
+        run: |
+          echo "🔍 Check the release results"
+          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}"
 
   sp012-gateway:
     if: ${{ inputs.jira_key == 'RMR' }}
