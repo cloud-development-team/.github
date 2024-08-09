@@ -64,6 +64,7 @@ jobs:
             test_repo=sightmind_jira_test
             repo=sightmind_jira_test
             project=sm
+            branch=main
 
             echo "backend_repo=$backend_repo" >> $GITHUB_OUTPUT
             echo "frontend_repo=$frontend_repo" >> $GITHUB_OUTPUT
@@ -206,7 +207,7 @@ jobs:
 
   sightmind-backend:
     if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
-    needs: [initial_setting]
+    needs: [initial_setting, create-github-release]
     name: SightMind Deploy
     uses: ./.github/workflows/deploy-sightmind-backend.yaml
     with:
