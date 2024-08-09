@@ -210,9 +210,19 @@ jobs:
     name: SightMind Deploy
     uses: ./.github/workflows/deploy-sightmind-backend.yaml
     with:
-      release_version: ${{ inputs.release_version }}
       release_env: ${{ inputs.release_env }}
-      frontend_repo: ${{ needs.initial_setting.outputs.frontend_repo }}
       backend_repo: ${{ needs.initial_setting.outputs.backend_repo }}
       target_branch: ${{ needs.initial_setting.outputs.target_branch }}
     secrets: inherit  
+
+
+  # sightmind-fronted:
+  #   if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
+  #   needs: [initial_setting, parallel-create-release]
+  #   name: SightMind Deploy
+  #   uses: ./.github/workflows/deploy-sightmind-frontend.yaml
+  #   with:
+  #     release_env: ${{ inputs.release_env }}
+  #     frontend_repo: ${{ needs.initial_setting.outputs.frontend_repo }}
+  #     target_branch: ${{ needs.initial_setting.outputs.target_branch }}
+  #   secrets: inherit  
