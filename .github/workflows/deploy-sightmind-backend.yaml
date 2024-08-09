@@ -1,5 +1,5 @@
-name: SightMind Deploy
-run-name: SightMind Deploy - ${{ inputs.release_env }}
+name: SightMind Backend Deploy
+run-name: SightMind Backend Deploy - ${{ inputs.release_env }}
 
 permissions: write-all
 
@@ -20,23 +20,13 @@ on:
         description: "List of node version which want to scan"
         type: string
         default: "['20.14.0']" #"['18.16']"
-      release_version:
-        description: 'Release Version'
-        required: true
-        default: ""
-        type: string
       release_env:
         description: 'Release Environment'
         required: true
         default: ""
         type: string
-      frontend_repo:
-        description: 'Frontend Repository'
-        required: true
-        default: ""
-        type: string
       backend_repo:
-        description: 'Backend Repository'
+        description: 'backend Repo'
         required: true
         default: ""
         type: string
@@ -82,6 +72,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          repository: cloud-development-team/${{ inputs.backend_repo }}
+          ref: refs/heads/${{ inputs.target_branch}}
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Setup Node.js
         if: inputs.target_branch != 'production'
