@@ -159,8 +159,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
         with:
-          tag_name: ${{needs.initial_setting.outputs.project}}_${{ inputs.release_version }}
-          release_name: ${{needs.initial_setting.outputs.project}}_${{ inputs.release_version }}
+          tag_name: ${{needs.initial_setting.outputs.project}}${{ inputs.release_version }}
+          release_name: ${{needs.initial_setting.outputs.project}}${{ inputs.release_version }}
           repo: ${{ matrix.repo }}
           commitish: ${{ needs.initial_setting.outputs.target_branch }}
           body: |
