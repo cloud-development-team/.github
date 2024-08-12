@@ -61,7 +61,7 @@ jobs:
           elif [ "${{ inputs.jira_key }}" == "KDOG" ] && [ "${{ inputs.release_env }}" == "test_sm" ]; then
             backend_repo=sightmind-backend-mono
             frontend_repo=hc-frontend-mono
-            test_repo=sightmind-backend-mono
+            test_repo=hc-frontend-mono
             project=sm
 
             echo "backend_repo=$backend_repo" >> $GITHUB_OUTPUT
@@ -138,7 +138,7 @@ jobs:
     environment: main
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1
+      # max-parallel: 1
       matrix:
         include:
           # - repo: ${{ needs.initial_setting.outputs.backend_repo }}
@@ -203,25 +203,25 @@ jobs:
       release_repo: ${{ needs.initial_setting.outputs.repo }}
     secrets: inherit  
 
-  sightmind-backend:
-    if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
-    needs: [initial_setting, parallel-create-release]
-    name: SightMind Deploy
-    uses: ./.github/workflows/deploy-sightmind-backend.yaml
-    with:
-      release_env: ${{ inputs.release_env }}
-      backend_repo: ${{ needs.initial_setting.outputs.backend_repo }}
-      target_branch: ${{ needs.initial_setting.outputs.target_branch }}
-    secrets: inherit  
-
-
-  # sightmind-fronted:
+  # sightmind-backend:
   #   if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
   #   needs: [initial_setting, parallel-create-release]
   #   name: SightMind Deploy
-  #   uses: ./.github/workflows/deploy-sightmind-frontend.yaml
+  #   uses: ./.github/workflows/deploy-sightmind-backend.yaml
   #   with:
   #     release_env: ${{ inputs.release_env }}
-  #     frontend_repo: ${{ needs.initial_setting.outputs.frontend_repo }}
+  #     backend_repo: ${{ needs.initial_setting.outputs.backend_repo }}
   #     target_branch: ${{ needs.initial_setting.outputs.target_branch }}
   #   secrets: inherit  
+
+
+  sightmind-fronted:
+    if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
+    needs: [initial_setting, parallel-create-release]
+    name: SightMind Deploy
+    uses: ./.github/workflows/deploy-sightmind-frontend.yaml
+    with:
+      release_env: ${{ inputs.release_env }}
+      frontend_repo: ${{ needs.initial_setting.outputs.frontend_repo }}
+      target_branch: ${{ needs.initial_setting.outputs.target_branch }}
+    secrets: inherit  

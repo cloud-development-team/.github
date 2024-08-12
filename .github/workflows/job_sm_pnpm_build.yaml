@@ -20,6 +20,21 @@ on:
         description: "List of node version which want to scan"
         type: string
         default: "['20.11.1']"
+      release_env:
+        description: 'Release Environment'
+        required: true
+        default: ""
+        type: string
+      frontend_repo:
+        description: 'Frontend Repo'
+        required: true
+        default: ""
+        type: string
+      target_branch:
+        description: 'Target Branch'
+        required: true
+        default: ""
+        type: string
 
     secrets:
       CODEFREEZE:
@@ -27,26 +42,28 @@ on:
 
 env:
   CODEFREEZE: ${{ secrets.CODEFREEZE }}
-  AUTOMATION_GH_USERNAME: ${{ vars.AUTOMATION_GH_USERNAME }}
-  GH_PAT_AUTOMATION: ${{ secrets.GH_PAT_AUTOMATION_SEMANTIC_RELEASE }} #${{ secrets.GH_PAT_AUTOMATION }}
+  GH_PAT_AUTOMATION: ${{ secrets.GH_PAT_AUTOMATION_SEMANTIC_RELEASE }}
 
 
 jobs:
   initial-tasks: 
     name: Initial tasks
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name }} 
+    environment: sm_frontend_${{ inputs.target_branch }} 
     outputs:
-      env: ${{ github.ref_name }}
-      region: ${{ vars.REGION }}
-      s3_bucket: ${{ vars.S3_BUCKET }}
-      s3_account: ${{ vars.S3_ACCOUNT }}
+      region: ${{ steps.set_env.outputs.region }}
+      s3_bucket: ${{ steps.set_env.outputs.s3_bucket }}
+      s3_account: ${{ steps.set_env.outputs.s3_account }}
       cloudfront_distribution_id: ${{ vars.CF_DISTRIBUTION_ID }}
-      production_version: ${{ vars.PRODUCTION_VERSION }}          
+      production_version: ${{ vars.PRODUCTION_VERSION }}
+  
     steps:
-      - name: Get environment
-        id: get_env
-        run: echo "env=${GITHUB_BASE_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+      - name: set env
+        id: set_env
+        run: |
+          echo "region=${{ vars.REGION }}" >> $GITHUB_OUTPUT
+          echo "s3_bucket=${{ vars.S3_BUCKET }}" >> $GITHUB_OUTPUT
+          echo "s3_account=${{ vars.S3_ACCOUNT }}" >> $GITHUB_OUTPUT     
 
   pnpm-build:
     name: Run pnpm build and release to S3 and invalidate CloudFront
@@ -59,29 +76,31 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          repository: cloud-development-team/${{ inputs.frontend_repo }}
+          ref: refs/heads/${{ inputs.target_branch}}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Setup Node.js
         if: github.ref_name != 'production'
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
 
       - name: Setup pnpm
         if: github.ref_name != 'production'
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 9.0.5
 
       - name: Caching pnpm
         if: github.ref_name != 'production'
-        uses: actions/cache@v3
+        uses: actions/cache@v4
+        id: pnpm-cache
         with:
-          id: pnpm-cache
           path: ./node_modules
-          key: ${{ needs.initial-tasks.outputs.env }}-${{ runner.os }}-node${{ matrix.node-version }}-${{ hashFiles('./pnpm-lock.yaml') }}
+          key: ${{ inputs.target_branch }}-${{ runner.os }}-node${{ matrix.node-version }}-${{ hashFiles('./pnpm-lock.yaml') }}
 
       - name: Login to NPM
         if: github.ref_name != 'production'
@@ -101,10 +120,10 @@ jobs:
         run: |
           # CI=false pnpm build:dev
 
-          if [ ${{ needs.initial-tasks.outputs.env }}  == "main" ]; then
+          if [ ${{ inputs.target_branch }}  == "main" ]; then
             echo "build dev environment"
             CI=false pnpm build:dev
-          elif [ ${{ needs.initial-tasks.outputs.env }}  == "release" ]; then
+          elif [ ${{ inputs.target_branch }}  == "release" ]; then
             echo "build qa environment"
             CI=false pnpm build:qa
           else
@@ -114,144 +133,37 @@ jobs:
 
       # Login To HVC_Admin_Automation for Deploy
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_AUTOMATION }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY_AUTOMATION }}
           aws-region: ${{ needs.initial-tasks.outputs.region }}
 
-      - name: Push build artifact to S3 Bucket and invalidation CloudFront
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          # Assume Role using an Automation Key
-          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ needs.initial-tasks.outputs.s3_account }}:role/AWSControlTowerExecution --role-session-name AWS)
-          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+      # - name: Push build artifact to S3 Bucket and invalidation CloudFront
+      #   working-directory: ${{ inputs.working_dir }}
+      #   run: |
+      #     # Assume Role using an Automation Key
+      #     identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ needs.initial-tasks.outputs.s3_account }}:role/AWSControlTowerExecution --role-session-name AWS)
+      #     export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+      #     export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+      #     export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
           
-          # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
-          if [ ${{ needs.initial-tasks.outputs.env }}  == "production" ]; then
-          # aws s3 sync s3://sm018-static-q-ue1/hotfix/build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ needs.initial-tasks.outputs.env }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-            if [ ${{ needs.initial-tasks.outputs.production_version }}  == "major" ]; then
-              aws s3 sync s3://sm018-static-q-ue1/release/build/major s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ needs.initial-tasks.outputs.env }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-            else
-              aws s3 sync s3://sm018-static-q-ue1/release/build/minor s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ needs.initial-tasks.outputs.env }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-            fi
-          else
-            if [ ${{ inputs.working_dir }}  == "./apps/sightmind" ]; then
-              aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ needs.initial-tasks.outputs.env }}/build/major --delete --region ${{ needs.initial-tasks.outputs.region }}
-            else
-              aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ needs.initial-tasks.outputs.env }}/build/minor --delete --region ${{ needs.initial-tasks.outputs.region }}
-            fi
-          fi
+      #     # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
+      #     if [ ${{ inputs.target_branch }}  == "production" ]; then
+      #     # aws s3 sync s3://sm018-static-q-ue1/hotfix/build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
+      #       if [ ${{ needs.initial-tasks.outputs.production_version }}  == "major" ]; then
+      #         aws s3 sync s3://sm018-static-q-ue1/release/build/major s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
+      #       else
+      #         aws s3 sync s3://sm018-static-q-ue1/release/build/minor s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
+      #       fi
+      #     else
+      #       if [ ${{ inputs.working_dir }}  == "./apps/sightmind" ]; then
+      #         aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/major --delete --region ${{ needs.initial-tasks.outputs.region }}
+      #       else
+      #         aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/minor --delete --region ${{ needs.initial-tasks.outputs.region }}
+      #       fi
+      #     fi
 
-          # Setting CloudFront
-          aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id }} --paths "/*"
-
-  versioning:
-    if: ${{ github.ref_name == 'release' }}
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      previous_version: ${{ steps.version.outputs.previous_version }}
-    name: Semantic Versioning
-    needs: [pnpm-build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Semantic Version
-        id: version
-        uses: paulhatch/semantic-version@v5.1.0
-        with:
-          major_pattern: "(MAJOR)"
-          minor_pattern: "(MINOR)"
-          version_format: "sm${major}.${minor}.${patch}"
-          tag_prefix: "sm"
-          bump_each_commit: false
-          search_commit_body: true
+      #     # Setting CloudFront
+      #     aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id }} --paths "/*"
   
-  release-gitops:
-    if: ${{ github.ref_name == 'release' }}
-    name: GitOps Release
-    needs: [versioning]
-    uses: cloud-development-team/.github/.github/workflows/gitops-ver-release.yaml@main
-    with:
-      repository_name: "cloud-development-team/global-infra-version"
-      build_ver: ${{ needs.versioning.outputs.version }}
-      application_name: "sightmind-hc-frontend-mono"
-    secrets: inherit
-
-  create-release:
-    if: ${{ github.ref_name == 'release' }}
-    name: GitHub Release
-    needs: [versioning, release-gitops]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-        with:
-          tag_name: ${{ needs.versioning.outputs.version }}
-          name: ${{ needs.versioning.outputs.version }}
-          body: ${{ steps.release_changelog.outputs.changelog }}
-
-      - name: Build Release Changelog
-        id: release_changelog
-        uses: mikepenz/release-changelog-builder-action@v4
-        with:
-          toTag: ${{ needs.versioning.outputs.version }}
-          fromTag: sm${{ needs.versioning.outputs.previous_version }}
-          configurationJson: |
-            {
-              "categories": [
-                {
-                    "title": "## 🚀 Feature",
-                    "rules": [
-                      {
-                        "pattern": "feat",
-                        "on_property": "title",
-                        "method": "match"
-                      }
-                    ]
-                },
-                {
-                    "title": "## 🐛 Fix",
-                    "rules": [
-                      {
-                        "pattern": "fix",
-                        "on_property": "title",
-                        "method": "match"
-                      }
-                    ]
-                },
-                {
-                  "title": "## 📦 Uncategorized",
-                  "rules": [
-                    {
-                      "pattern": "^(?!.*\\b(feat|fix)\\b).*$",
-                      "on_property": "title",
-                      "method": "match"
-                    }
-                  ]
-                }
-              ]
-            }
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Add Changelog Report to Release
-        uses: irongut/EditRelease@v1.2.0
-        with:
-          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-          id: ${{ steps.create_release.outputs.id }}
-          body: ${{ steps.release_changelog.outputs.changelog }}
