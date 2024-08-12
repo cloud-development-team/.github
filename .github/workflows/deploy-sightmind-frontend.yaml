@@ -66,8 +66,8 @@ jobs:
 
   statitic-analysis:
     name: Analysis code quality
-    if: ${{ needs.detect-changes.outputs.sightmind == 'true' && (github.event.ref == 'refs/heads/release' || github.event.ref == 'refs/heads/coverity') }}
-    uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
+    if: ${{ needs.detect-changes.outputs.sightmind == 'true' && inputs.target_branch == 'release' }}
+    uses: ./.github/workflows/static-analysis.yaml
     needs: detect-changes
     with:
       REPO_NAME: hc-frontend-mono
@@ -78,8 +78,8 @@ jobs:
   
   statitic-analysis-minor:
     name: Analysis code quality
-    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && (github.event.ref == 'refs/heads/release' || github.event.ref == 'refs/heads/coverity') }}
-    uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
+    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && inputs.target_branch == 'release' }}
+    uses: ./.github/workflows/static-analysis.yaml
     needs: detect-changes
     with:
       REPO_NAME: hc-frontend-mono
@@ -90,18 +90,25 @@ jobs:
 
   build-and-release:
     name: Build and release
-    if: ${{ (needs.detect-changes.outputs.sightmind == 'true' && github.event.ref != 'refs/heads/coverity') || (github.event.ref == 'refs/heads/production' && needs.detect-changes.outputs.sightmind_minor == 'true' ) }}
+    if: ${{ inputs.target_branch == 'production' && needs.detect-changes.outputs.sightmind_minor == 'true' }}
     needs: detect-changes
     uses: ./.github/workflows/job_sm_pnpm_build.yaml
     with:
       working_dir: ./apps/sightmind
+      release_env: ${{ inputs.release_env }}
+      frontend_repo: ${{ inputs.frontend_repo }}
+      target_branch: ${{ inputs.target_branch }}
     secrets: inherit
 
   build-and-release-minor:
     name: Build and release(minor)
-    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && github.event.ref != 'refs/heads/coverity' && github.event.ref != 'refs/heads/production' }}
+    if: ${{ inputs.target_branch != 'production' }}
+    # if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && inputs.target_branch != 'production' }}
     needs: detect-changes
     uses: ./.github/workflows/job_sm_pnpm_build.yaml
     with:
       working_dir: ./apps/sightmind_minor
+      release_env: ${{ inputs.release_env }}
+      frontend_repo: ${{ inputs.frontend_repo }}
+      target_branch: ${{ inputs.target_branch }}
     secrets: inherit
