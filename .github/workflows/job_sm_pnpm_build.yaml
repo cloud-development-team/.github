@@ -94,13 +94,13 @@ jobs:
         with:
           version: 9.0.5
 
-      - name: Caching pnpm
-        if: github.ref_name != 'production'
-        uses: actions/cache@v4
-        id: pnpm-cache
-        with:
-          path: ./node_modules
-          key: ${{ inputs.target_branch }}-${{ runner.os }}-node${{ matrix.node-version }}-${{ hashFiles('./pnpm-lock.yaml') }}
+      # - name: Caching pnpm
+      #   if: github.ref_name != 'production'
+      #   uses: actions/cache@v4
+      #   id: pnpm-cache
+      #   with:
+      #     path: ./node_modules
+      #     key: ${{ inputs.target_branch }}-${{ runner.os }}-node${{ matrix.node-version }}-${{ hashFiles('./pnpm-lock.yaml') }}
 
       - name: Login to NPM
         if: github.ref_name != 'production'
