@@ -139,31 +139,38 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY_AUTOMATION }}
           aws-region: ${{ needs.initial-tasks.outputs.region }}
 
-      # - name: Push build artifact to S3 Bucket and invalidation CloudFront
-      #   working-directory: ${{ inputs.working_dir }}
-      #   run: |
-      #     # Assume Role using an Automation Key
-      #     identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ needs.initial-tasks.outputs.s3_account }}:role/AWSControlTowerExecution --role-session-name AWS)
-      #     export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
-      #     export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
-      #     export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+      - name: Push build artifact to S3 Bucket and invalidation CloudFront
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          # Assume Role using an Automation Key
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ needs.initial-tasks.outputs.s3_account }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
           
-      #     # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
-      #     if [ ${{ inputs.target_branch }}  == "production" ]; then
-      #     # aws s3 sync s3://sm018-static-q-ue1/hotfix/build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-      #       if [ ${{ needs.initial-tasks.outputs.production_version }}  == "major" ]; then
-      #         aws s3 sync s3://sm018-static-q-ue1/release/build/major s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-      #       else
-      #         aws s3 sync s3://sm018-static-q-ue1/release/build/minor s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-      #       fi
-      #     else
-      #       if [ ${{ inputs.working_dir }}  == "./apps/sightmind" ]; then
-      #         aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/major --delete --region ${{ needs.initial-tasks.outputs.region }}
-      #       else
-      #         aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/minor --delete --region ${{ needs.initial-tasks.outputs.region }}
-      #       fi
-      #     fi
 
-      #     # Setting CloudFront
-      #     aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id }} --paths "/*"
+          # test block
+          if [ ${{inputs.release_env}} == 'test_sm' ]; then
+          aws s3 sync ./build s3://sm018-static-test-d-an2/${{ inputs.target_branch }}/build/major --delete --region ${{ needs.initial-tasks.outputs.region }}
+
+          fi
+
+          # # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
+          # if [ ${{ inputs.target_branch }}  == "production" ]; then
+          # # aws s3 sync s3://sm018-static-q-ue1/hotfix/build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
+          #   if [ ${{ needs.initial-tasks.outputs.production_version }}  == "major" ]; then
+          #     aws s3 sync s3://sm018-static-q-ue1/release/build/major s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
+          #   else
+          #     aws s3 sync s3://sm018-static-q-ue1/release/build/minor s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
+          #   fi
+          # else
+          #   if [ ${{ inputs.working_dir }}  == "./apps/sightmind" ]; then
+          #     aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/major --delete --region ${{ needs.initial-tasks.outputs.region }}
+          #   else
+          #     aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/minor --delete --region ${{ needs.initial-tasks.outputs.region }}
+          #   fi
+          # fi
+
+          # # Setting CloudFront
+          # aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id }} --paths "/*"
   
