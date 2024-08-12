@@ -51,10 +51,10 @@ jobs:
         with:
           repository: cloud-development-team/${{ inputs.frontend_repo }}
           ref: refs/heads/${{ inputs.target_branch}}
-          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Filtering changed repository
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v3
         id: filter
         with:
           base: ${{ inputs.target_branch }}
