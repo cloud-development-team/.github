@@ -28,6 +28,7 @@ jobs:
       branch: ${{ steps.set_env.outputs.branch }}
       backend_repo: ${{ steps.set_env.outputs.backend_repo }}
       frontend_repo: ${{ steps.set_env.outputs.frontend_repo }}
+      auth_repo: ${{ steps.set_env.outputs.auth_repo }}
       test_repo: ${{ steps.set_env.outputs.test_repo }}
       release_env: ${{ steps.set_env.outputs.release_env }}
       release_version: ${{ steps.set_env.outputs.release_version }}
@@ -61,11 +62,14 @@ jobs:
           elif [ "${{ inputs.jira_key }}" == "KDOG" ] && [ "${{ inputs.release_env }}" == "test_sm" ]; then
             backend_repo=sightmind-backend-mono
             frontend_repo=hc-frontend-mono
+            auth_repo=hvcp-authorization
             test_repo=hc-frontend-mono
             project=sm
 
+
             echo "backend_repo=$backend_repo" >> $GITHUB_OUTPUT
             echo "frontend_repo=$frontend_repo" >> $GITHUB_OUTPUT
+            echo "auth_repo=$auth_repo" >> $GITHUB_OUTPUT
             echo "test_repo=$test_repo" >> $GITHUB_OUTPUT
           fi
 
@@ -143,6 +147,8 @@ jobs:
         include:
           - repo: ${{ needs.initial_setting.outputs.backend_repo }}
           - repo: ${{ needs.initial_setting.outputs.frontend_repo }}
+          - repo: ${{ needs.initial_setting.outputs.auth_repo }}
+
           # - repo: ${{ needs.initial_setting.outputs.test_repo }}
 
     steps:
@@ -206,7 +212,7 @@ jobs:
   sightmind-backend:
     if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
     needs: [initial_setting, parallel-create-release]
-    name: SightMind Deploy
+    name: SightMind Backend Deploy
     uses: ./.github/workflows/deploy-sightmind-backend.yaml
     with:
       release_env: ${{ inputs.release_env }}
@@ -217,10 +223,21 @@ jobs:
   sightmind-fronted:
     if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
     needs: [initial_setting, parallel-create-release]
-    name: SightMind Deploy
+    name: SightMind Frontend Deploy
     uses: ./.github/workflows/deploy-sightmind-frontend.yaml
     with:
       release_env: ${{ inputs.release_env }}
       frontend_repo: ${{ needs.initial_setting.outputs.frontend_repo }}
       target_branch: ${{ needs.initial_setting.outputs.target_branch }}
     secrets: inherit  
+
+  # auth-backend:
+  #   if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
+  #   needs: [initial_setting, parallel-create-release]
+  #   name: AuthZ Backend Deploy
+  #   uses: ./.github/workflows/deploy-authZ-backend.yaml
+  #   with:
+  #     release_env: ${{ inputs.release_env }}
+  #     backend_repo: ${{ needs.initial_setting.outputs.auth_repo }}
+  #     target_branch: ${{ needs.initial_setting.outputs.target_branch }}
+  #   secrets: inherit  
