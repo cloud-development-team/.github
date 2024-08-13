@@ -29,7 +29,6 @@ jobs:
       backend_repo: ${{ steps.set_env.outputs.backend_repo }}
       frontend_repo: ${{ steps.set_env.outputs.frontend_repo }}
       auth_repo: ${{ steps.set_env.outputs.auth_repo }}
-      test_repo: ${{ steps.set_env.outputs.test_repo }}
       release_env: ${{ steps.set_env.outputs.release_env }}
       release_version: ${{ steps.set_env.outputs.release_version }}
       target_branch: ${{ steps.set_env.outputs.target_branch }}
@@ -60,10 +59,10 @@ jobs:
               branch=release
             fi
           #elif [ ${{ inputs.jira_key }}  == "CPD" ]; then
-          elif [ ${{ inputs.jira_key }}  == "KDOG" ] && [ ${{inputs.release_env}} != "test_sm" ]; then
+          elif [ ${{ inputs.jira_key }}  == "KDOG" ]; then
             repo=dmpro-gitops
             branch=main
-          elif [ "${{ inputs.jira_key }}" == "KDOG" ] && [ "${{ inputs.release_env }}" == "test_sm" ]; then
+          elif [ "${{ inputs.jira_key }}" == "IS360" ]; then
             backend_repo=sightmind-backend-mono
             frontend_repo=hc-frontend-mono
             auth_repo=hvcp-authorization
@@ -75,7 +74,6 @@ jobs:
             echo "backend_repo=$backend_repo" >> $GITHUB_OUTPUT
             echo "frontend_repo=$frontend_repo" >> $GITHUB_OUTPUT
             echo "auth_repo=$auth_repo" >> $GITHUB_OUTPUT
-            echo "test_repo=$test_repo" >> $GITHUB_OUTPUT
             echo "matrix=$matrix" >> $GITHUB_OUTPUT
           fi
 
@@ -106,7 +104,7 @@ jobs:
 
   create-github-release:
     name: Create release
-    if: ${{ inputs.release_env != 'test_sm' }}
+    if: ${{ inputs.jira_key != 'IS360' }} 
     needs: [initial_setting]
     environment: main
     runs-on: ubuntu-latest
@@ -144,7 +142,7 @@ jobs:
 
   parallel-create-release:
     name: parallel create release
-    if: ${{ inputs.jira_key == 'KDOG' && inputs.release_env == 'test_sm' }}
+    if: ${{ inputs.jira_key == 'IS360' }} 
     needs: [initial_setting]
     runs-on: ubuntu-latest
     strategy:
