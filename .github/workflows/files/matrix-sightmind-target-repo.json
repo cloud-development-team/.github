@@ -1,0 +1,8 @@
+{
+    "include": [
+      { "repo": "backend-repo" },
+      { "repo": "frontend-repo" },
+      { "repo": "auth-repo" }
+    ]
+  }
+  

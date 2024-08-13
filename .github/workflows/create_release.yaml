@@ -34,6 +34,7 @@ jobs:
       release_version: ${{ steps.set_env.outputs.release_version }}
       target_branch: ${{ steps.set_env.outputs.target_branch }}
       project: ${{ steps.set_env.outputs.project }}
+      matrix: ${{ steps.set_env.outputs.matrix }}
       
     name: Initial Setting
     runs-on: ubuntu-latest
@@ -64,13 +65,15 @@ jobs:
             frontend_repo=hc-frontend-mono
             auth_repo=hvcp-authorization
             test_repo=hc-frontend-mono
-            project=sm
+            matrix=$(cat .github/workflows/files/matrix-sightmind-target-repo.json)
 
+            project=sm
 
             echo "backend_repo=$backend_repo" >> $GITHUB_OUTPUT
             echo "frontend_repo=$frontend_repo" >> $GITHUB_OUTPUT
             echo "auth_repo=$auth_repo" >> $GITHUB_OUTPUT
             echo "test_repo=$test_repo" >> $GITHUB_OUTPUT
+            echo "matrix=$matrix" >> $GITHUB_OUTPUT
           fi
 
           if [ "${{ inputs.release_env }}"  == "QA" ]; then
@@ -139,18 +142,10 @@ jobs:
     name: parallel create release
     if: ${{ inputs.jira_key == 'KDOG' && inputs.release_env == 'test_sm' }}
     needs: [initial_setting]
-    environment: main
     runs-on: ubuntu-latest
     strategy:
-      # max-parallel: 1
-      matrix:
-        include:
-          - repo: ${{ needs.initial_setting.outputs.backend_repo }}
-          - repo: ${{ needs.initial_setting.outputs.frontend_repo }}
-          - repo: ${{ needs.initial_setting.outputs.auth_repo }}
-
-          # - repo: ${{ needs.initial_setting.outputs.test_repo }}
-
+      matrix: ${{ fromJson(needs.initial_setting.outputs.matrix) }}
+        
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -209,27 +204,27 @@ jobs:
       release_repo: ${{ needs.initial_setting.outputs.repo }}
     secrets: inherit  
 
-  sightmind-backend:
-    if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
-    needs: [initial_setting, parallel-create-release]
-    name: SightMind Backend Deploy
-    uses: ./.github/workflows/deploy-sightmind-backend.yaml
-    with:
-      release_env: ${{ inputs.release_env }}
-      backend_repo: ${{ needs.initial_setting.outputs.backend_repo }}
-      target_branch: ${{ needs.initial_setting.outputs.target_branch }}
-    secrets: inherit  
+  # sightmind-backend:
+  #   if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
+  #   needs: [initial_setting, parallel-create-release]
+  #   name: SightMind Backend Deploy
+  #   uses: ./.github/workflows/deploy-sightmind-backend.yaml
+  #   with:
+  #     release_env: ${{ inputs.release_env }}
+  #     backend_repo: ${{ needs.initial_setting.outputs.backend_repo }}
+  #     target_branch: ${{ needs.initial_setting.outputs.target_branch }}
+  #   secrets: inherit  
 
-  sightmind-fronted:
-    if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
-    needs: [initial_setting, parallel-create-release]
-    name: SightMind Frontend Deploy
-    uses: ./.github/workflows/deploy-sightmind-frontend.yaml
-    with:
-      release_env: ${{ inputs.release_env }}
-      frontend_repo: ${{ needs.initial_setting.outputs.frontend_repo }}
-      target_branch: ${{ needs.initial_setting.outputs.target_branch }}
-    secrets: inherit  
+  # sightmind-fronted:
+  #   if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
+  #   needs: [initial_setting, parallel-create-release]
+  #   name: SightMind Frontend Deploy
+  #   uses: ./.github/workflows/deploy-sightmind-frontend.yaml
+  #   with:
+  #     release_env: ${{ inputs.release_env }}
+  #     frontend_repo: ${{ needs.initial_setting.outputs.frontend_repo }}
+  #     target_branch: ${{ needs.initial_setting.outputs.target_branch }}
+  #   secrets: inherit  
 
   # auth-backend:
   #   if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
