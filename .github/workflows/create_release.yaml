@@ -68,7 +68,7 @@ jobs:
             frontend_repo=hc-frontend-mono
             auth_repo=hvcp-authorization
             test_repo=hc-frontend-mono
-            matrix=$(cat ./.github/workflows/files/matrix-sightmind-target-repo.json)
+            matrix=$(jq -c '.' .github/workflows/files/matrix-sightmind-target-repo.json)
 
             project=sm
 
