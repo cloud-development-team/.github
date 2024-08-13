@@ -25,6 +25,11 @@ on:
         required: true
         default: ""
         type: string
+      release_version:
+        description: 'Release Version'
+        required: true
+        default: ""
+        type: string
       frontend_repo:
         description: 'Frontend Repo'
         required: true
@@ -98,6 +103,7 @@ jobs:
       release_env: ${{ inputs.release_env }}
       frontend_repo: ${{ inputs.frontend_repo }}
       target_branch: ${{ inputs.target_branch }}
+      release_version: ${{ inputs.release_version }}
     secrets: inherit
 
   build-and-release-minor:
@@ -111,4 +117,5 @@ jobs:
       release_env: ${{ inputs.release_env }}
       frontend_repo: ${{ inputs.frontend_repo }}
       target_branch: ${{ inputs.target_branch }}
+      release_version: ${{ inputs.release_version }}
     secrets: inherit

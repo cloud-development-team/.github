@@ -25,6 +25,11 @@ on:
         required: true
         default: ""
         type: string
+      release_version:
+        description: 'Release Version'
+        required: true
+        default: ""
+        type: string
       backend_repo:
         description: 'backend Repo'
         required: true
@@ -144,16 +149,16 @@ jobs:
 
           # test block 
           if [ ${{inputs.release_env}} == 'test_sm' ]; then
-          aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors 
+          aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
           fi
 
           # # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
           # if [ ${{ inputs.target_branch }}  == "production" ]; then
           #   echo "production upload"
-          #   aws s3 cp s3://vcm021-cicd-q-ue1/authZ/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors 
-          #   # aws s3 cp s3://sm018-hotfix-cicd-d-an2/backend/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors 
+          #   aws s3 cp s3://vcm021-cicd-q-ue1/authZ/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
+          #   # aws s3 cp s3://sm018-hotfix-cicd-d-an2/backend/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
           # else
-          #   aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors 
+          #   aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors  --metadata version=${{ inputs.release_version }}
           # fi
           
           aws sts get-caller-identity
