@@ -1,8 +1,8 @@
 {
     "include": [
-      { "repo": "backend-repo" },
-      { "repo": "frontend-repo" },
-      { "repo": "auth-repo" }
+      { "repo": "sightmind-backend-mono" },
+      { "repo": "hc-frontend-mono" },
+      { "repo": "hvcp-authorization" }
     ]
   }
   
