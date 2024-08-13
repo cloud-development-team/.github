@@ -23,6 +23,7 @@ on:
 
 jobs:
   initial_setting:
+    if: github.actor == 'jenkins-se'
     outputs:
       repo: ${{ steps.set_env.outputs.repo }}
       branch: ${{ steps.set_env.outputs.branch }}
@@ -103,7 +104,7 @@ jobs:
 
   create-github-release:
     name: Create release
-    if: ${{ inputs.jira_key != 'IS360' }} 
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key != 'IS360'}} 
     needs: [initial_setting]
     environment: main
     runs-on: ubuntu-latest
@@ -140,7 +141,7 @@ jobs:
 
   parallel-create-release:
     name: parallel create release
-    if: ${{ inputs.jira_key == 'IS360' }} 
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
     needs: [initial_setting]
     runs-on: ubuntu-latest
     strategy:
@@ -175,7 +176,7 @@ jobs:
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}"
 
   sp012-gateway:
-    if: ${{ inputs.jira_key == 'RMR' }}
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'RMR' }}
     needs: [initial_setting, create-github-release]
     name: Gateway Deploy
     uses: ./.github/workflows/build-and-push-to-s3-sp012.yaml
@@ -194,7 +195,7 @@ jobs:
     secrets: inherit   
     
   dmpro:
-    if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env != 'test_sm' }} 
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key  == 'KDOG' && inputs.release_env != 'test_sm' }} 
     needs: [initial_setting, create-github-release]
     name: DMPro Deploy
     uses: ./.github/workflows/deploy-dmpro.yaml
@@ -205,7 +206,7 @@ jobs:
     secrets: inherit  
 
   # sightmind-backend:
-  #   if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
+  #   if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' && inputs.release_env == 'test_sm' }} 
   #   needs: [initial_setting, parallel-create-release]
   #   name: SightMind Backend Deploy
   #   uses: ./.github/workflows/deploy-sightmind-backend.yaml
@@ -216,7 +217,7 @@ jobs:
   #   secrets: inherit  
 
   # sightmind-fronted:
-  #   if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
+  #   if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' && inputs.release_env == 'test_sm' }} 
   #   needs: [initial_setting, parallel-create-release]
   #   name: SightMind Frontend Deploy
   #   uses: ./.github/workflows/deploy-sightmind-frontend.yaml
@@ -227,7 +228,7 @@ jobs:
   #   secrets: inherit  
 
   # auth-backend:
-  #   if: ${{ inputs.jira_key  == 'KDOG' && inputs.release_env == 'test_sm' }} 
+  #   if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' && inputs.release_env == 'test_sm' }} 
   #   needs: [initial_setting, parallel-create-release]
   #   name: AuthZ Backend Deploy
   #   uses: ./.github/workflows/deploy-authZ-backend.yaml
