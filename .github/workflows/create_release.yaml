@@ -39,6 +39,9 @@ jobs:
     name: Initial Setting
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+
       - name: Repository List
         id: set_env
         run: |
@@ -65,7 +68,7 @@ jobs:
             frontend_repo=hc-frontend-mono
             auth_repo=hvcp-authorization
             test_repo=hc-frontend-mono
-            matrix=$(cat ./.github/workflows/matrix-sightmind-target-repo.json)
+            matrix=$(cat ./.github/workflows/files/matrix-sightmind-target-repo.json)
 
             project=sm
 
