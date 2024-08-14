@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current repository
-        if: ${{ inputs.release_env == 'QA' }}
+        if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'PROD'}}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -103,7 +103,7 @@ jobs:
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Create Github Release
-        if: ${{ inputs.release_env == 'QA' }}
+        if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'PROD'}}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
@@ -118,7 +118,7 @@ jobs:
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
 
       - name: Github Release Result
-        if: ${{ inputs.release_env == 'QA' }}
+        if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'PROD'}}
         run: |
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
