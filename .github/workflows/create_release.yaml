@@ -46,7 +46,7 @@ jobs:
         id: set_env
         run: |
           #elif [ ${{ inputs.jira_key }}  == "CPD" ]; then
-          elif [ ${{ inputs.jira_key }}  == "KDOG" ]; then
+          if [ ${{ inputs.jira_key }}  == "KDOG" ]; then
             repo=dmpro-gitops
             branch=main
           elif [ "${{ inputs.jira_key }}" == "IS360" ]; then
