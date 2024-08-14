@@ -69,8 +69,6 @@ jobs:
             target_branch=production  
           elif [ "${{ inputs.release_env }}" == *"hotfix/"* ]; then
             target_branch=production
-          elif [ "${{ inputs.release_env }}" == "test_sm" ]; then
-            target_branch=main
           else
             target_branch=null
           fi
@@ -186,7 +184,7 @@ jobs:
     secrets: inherit  
 
   sightmind-fronted:
-    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' && inputs.release_env == 'test_sm' }} 
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
     needs: [initial_setting, parallel-create-release]
     name: SightMind Frontend Deploy
     uses: ./.github/workflows/deploy-sightmind-frontend.yaml
@@ -197,14 +195,14 @@ jobs:
       release_version: ${{ needs.initial_setting.outputs.release_version }}
     secrets: inherit  
 
-  # auth-backend:
-  #   if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' && inputs.release_env == 'test_sm' }} 
-  #   needs: [initial_setting, parallel-create-release]
-  #   name: AuthZ Backend Deploy
-  #   uses: ./.github/workflows/deploy-authZ-backend.yaml
-  #   with:
-  #     release_env: ${{ inputs.release_env }}
-  #     backend_repo: ${{ needs.initial_setting.outputs.auth_repo }}
-  #     target_branch: ${{ needs.initial_setting.outputs.target_branch }}
-  #     release_version: ${{ needs.initial_setting.outputs.release_version }}
-  #   secrets: inherit  
+  auth-backend:
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
+    needs: [initial_setting, parallel-create-release]
+    name: AuthZ Backend Deploy
+    uses: ./.github/workflows/deploy-authZ-backend.yaml
+    with:
+      release_env: ${{ inputs.release_env }}
+      backend_repo: ${{ needs.initial_setting.outputs.auth_repo }}
+      target_branch: ${{ needs.initial_setting.outputs.target_branch }}
+      release_version: ${{ needs.initial_setting.outputs.release_version }}
+    secrets: inherit  

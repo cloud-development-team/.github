@@ -60,14 +60,13 @@ jobs:
         id: set_env
         run: |
           echo "region=${{ vars.REGION }}" >> $GITHUB_OUTPUT
-          # echo "s3_bucket=${{ vars.S3_BUCKET }}" >> $GITHUB_OUTPUT
-          echo "s3_bucket=sm018-cicd-test-d-an2" >> $GITHUB_OUTPUT
+          echo "s3_bucket=${{ vars.S3_BUCKET }}" >> $GITHUB_OUTPUT
           echo "s3_account=${{ vars.S3_ACCOUNT }}" >> $GITHUB_OUTPUT
 
   pnpm-build:
     name: Run Node Build
     runs-on: ubuntu-latest
-    environment: sm_aws
+    environment: aws
     needs: [init]
     strategy:
       matrix:

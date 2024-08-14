@@ -1,5 +1,5 @@
-name: SightMind Backend Deploy
-run-name: SightMind Backend Deploy - ${{ inputs.release_env }}
+name: AuthZ Backend Deploy
+run-name: AuthZ Backend Deploy - ${{ inputs.release_env }}
 
 permissions: write-all
 
@@ -60,14 +60,13 @@ jobs:
         id: set_env
         run: |
           echo "region=${{ vars.REGION }}" >> $GITHUB_OUTPUT
-          # echo "s3_bucket=${{ vars.S3_BUCKET }}" >> $GITHUB_OUTPUT
-          # echo "s3_bucket=sm018-cicd-test-d-an2" >> $GITHUB_OUTPUT
+          echo "s3_bucket=${{ vars.S3_BUCKET }}" >> $GITHUB_OUTPUT
           echo "s3_account=${{ vars.S3_ACCOUNT }}" >> $GITHUB_OUTPUT
 
   pnpm-build:
     name: Run Node Build
     runs-on: ubuntu-latest
-    environment: sm_aws
+    environment: aws
     needs: [init]
     strategy:
       matrix:
@@ -147,18 +146,13 @@ jobs:
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
-          # test block 
-          if [ ${{inputs.release_env}} == 'test_sm' ]; then
-          aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
+          # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
+          if [ ${{ inputs.target_branch }}  == "production" ]; then
+            echo "production upload"
+            aws s3 cp s3://vcm021-cicd-q-ue1/authZ/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
+            # aws s3 cp s3://sm018-hotfix-cicd-d-an2/backend/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
+          else
+            aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors  --metadata version=${{ inputs.release_version }}
           fi
-
-          # # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
-          # if [ ${{ inputs.target_branch }}  == "production" ]; then
-          #   echo "production upload"
-          #   aws s3 cp s3://vcm021-cicd-q-ue1/authZ/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
-          #   # aws s3 cp s3://sm018-hotfix-cicd-d-an2/backend/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
-          # else
-          #   aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors  --metadata version=${{ inputs.release_version }}
-          # fi
           
           aws sts get-caller-identity
