@@ -202,7 +202,7 @@ jobs:
           git config user.name "GitHub Actions Bot" && \
           git config user.email "<>" && \
           git add --all
-          git commit -m "cd: deploy dmpro dev test for ${{ inputs.release_version }}" && \
+          git commit -m "cd: deploy dmpro prod version ${{ inputs.release_version }}" && \
           git push origin main
         continue-on-error: true
       
