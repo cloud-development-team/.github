@@ -45,12 +45,10 @@ jobs:
   detect-changes:
     name: Detect SightMind changes
     runs-on: ubuntu-latest
-    environment: sm_${{ inputs.target_branch }}
     outputs:
       sightmind: ${{ steps.filter.outputs.sightmind }}
       sightmind_minor: ${{ steps.filter.outputs.sightmind_minor }}  
     steps:
-      
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -108,8 +106,7 @@ jobs:
 
   build-and-release-minor:
     name: Build and release(minor)
-    if: ${{ inputs.target_branch != 'production' }}
-    # if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && inputs.target_branch != 'production' }}
+    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && inputs.target_branch != 'production' }}
     needs: detect-changes
     uses: ./.github/workflows/job_sm_pnpm_build.yaml
     with:
