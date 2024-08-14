@@ -157,14 +157,14 @@ jobs:
         run: |
           pwd
           ls -la
-          cp dev_version.yaml qa_version.yaml
-          cp dev_version.json qa_version.json
+          cp qa_version.yaml prod_version.yaml
+          cp qa_version.json prod_version.json
           
       - name: Update version.json information
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
+            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' prod_version.json     
 
       - name: Get Time
         id: time
@@ -177,7 +177,7 @@ jobs:
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
-            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
+            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' prod_version.json
 
       - name: Install yq
         run: |
@@ -193,9 +193,9 @@ jobs:
               image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
               yq -i '
                 .image.tag = "'$image_tag'"
-              ' ./$service_name/env/qa.yaml || true
+              ' ./$service_name/env/prod.yaml || true
             fi
-          done < qa_version.yaml
+          done < prod_version.yaml
 
       - name: Commit changes
         run: |
