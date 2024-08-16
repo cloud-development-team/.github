@@ -45,7 +45,6 @@ jobs:
   detect-changes:
     name: Detect SightMind changes
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name }}
     outputs:
       sightmind: ${{ steps.filter.outputs.sightmind }}
       sightmind_minor: ${{ steps.filter.outputs.sightmind_minor }}  

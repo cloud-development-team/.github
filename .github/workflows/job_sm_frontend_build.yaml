@@ -88,19 +88,19 @@ jobs:
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Setup Node.js
-        if: github.ref_name != 'production'
+        if: inputs.target_branch != 'production'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
 
       - name: Setup pnpm
-        if: github.ref_name != 'production'
+        if: inputs.target_branch != 'production'
         uses: pnpm/action-setup@v4
         with:
           version: 9.0.5
 
       # - name: Caching pnpm
-      #   if: github.ref_name != 'production'
+      #   if: inputs.target_branch != 'production'
       #   uses: actions/cache@v4
       #   id: pnpm-cache
       #   with:
@@ -108,19 +108,19 @@ jobs:
       #     key: ${{ inputs.target_branch }}-${{ runner.os }}-node${{ matrix.node-version }}-${{ hashFiles('./pnpm-lock.yaml') }}
 
       - name: Login to NPM
-        if: github.ref_name != 'production'
+        if: inputs.target_branch != 'production'
         working-directory: ${{ inputs.working_dir }}
         run: |
           npm install -g npm-cli-login 
           npm-cli-login -u hvc_automation -p ${{ env.GH_PAT_AUTOMATION }} -e sdo016-prod@hanwha.com -r https://npm.pkg.github.com -s @backend-sw-development-team4 
 
       - name: Install dependencies
-        if: github.ref_name != 'production' && steps.pnpm-cache.outputs.cache-hit != 'true'
+        if: inputs.target_branch != 'production' && steps.pnpm-cache.outputs.cache-hit != 'true'
         working-directory: ${{ inputs.working_dir }}
         run: pnpm install
 
       - name: Build
-        if: github.ref_name != 'production'
+        if: inputs.target_branch != 'production'
         working-directory: ${{ inputs.working_dir }}
         run: |
           # CI=false pnpm build:dev
