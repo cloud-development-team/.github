@@ -168,7 +168,7 @@ jobs:
             fi
             # aws s3 cp s3://sm018-hotfix-cicd-d-an2/backend/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors 
           else
-            if [ ${{ inputs.working_dir }}  == "./apps" ]; then
+            if [ ${{ inputs.version }} =="major" ]; then
               aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/major/deploy.zip --only-show-errors 
             else
               aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/minor/deploy.zip --only-show-errors 

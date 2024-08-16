@@ -67,7 +67,7 @@ jobs:
   static-analysis:
     name: Analysis code quality
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.sightmind == 'true' && github.event.ref == 'refs/heads/coverity' }}
+    if: ${{ needs.detect-changes.outputs.sightmind == 'true' && inputs.target_branch == 'release' }}
     uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
     with:
       REPO_NAME: sightmind-backend-mono
@@ -78,7 +78,7 @@ jobs:
   static-analysis-minor:
     name: Analysis code quality
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && github.event.ref == 'refs/heads/coverity' }}
+    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && inputs.target_branch == 'release' }}
     uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
     with:
       REPO_NAME: sightmind-backend-mono
@@ -89,7 +89,7 @@ jobs:
   build-and-push-to-s3:
     name: Build and push artifact to s3
     needs: detect-changes
-    if: ${{ (needs.detect-changes.outputs.sightmind == 'true') || (github.event.ref == 'refs/heads/production' && needs.detect-changes.outputs.sightmind_minor == 'true' ) }}
+    if: ${{ needs.detect-changes.outputs.sightmind == 'true' }}
     uses: ./.github/workflows/job_sm_backend_build.yaml
     with:
       working_dir: ./
@@ -103,7 +103,7 @@ jobs:
   build-and-push-to-s3-minor:
     name: Build and push artifact to s3 (minor)
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && github.event.ref != 'refs/heads/production' }}
+    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' }}
     uses: ./.github/workflows/job_sm_backend_build.yaml
     with:
       working_dir: ./
