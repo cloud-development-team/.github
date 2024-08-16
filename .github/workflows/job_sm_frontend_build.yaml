@@ -60,7 +60,7 @@ jobs:
       s3_bucket: ${{ steps.set_env.outputs.s3_bucket }}
       s3_account: ${{ steps.set_env.outputs.s3_account }}
       cloudfront_distribution_id: ${{ vars.CF_DISTRIBUTION_ID }}
-      production_version: ${{ vars.PRODUCTION_VERSION }}
+      production_version: ${{ vars.SM_FRONTEND_PRODUCTION_VERSION }}
   
     steps:
       - name: set env

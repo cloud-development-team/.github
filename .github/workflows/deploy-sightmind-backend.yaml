@@ -41,118 +41,75 @@ on:
           default: ""
           type: string
 
-env:
-  CODEFREEZE: ${{ secrets.CODEFREEZE }}
-  GH_PAT_AUTOMATION: ${{ secrets.GH_PAT_AUTOMATION_SEMANTIC_RELEASE }} #${{ secrets.GH_PAT_AUTOMATION }}
-
 jobs:
-  init:
+  detect-changes:
+    name: Detect SightMind changes
     runs-on: ubuntu-latest
-    environment: sm_backend_${{ inputs.target_branch }}
-    
+    environment: ${{ github.ref_name }}
     outputs:
-      region: ${{ steps.set_env.outputs.region }}
-      s3_bucket: ${{ steps.set_env.outputs.s3_bucket }}
-      s3_account: ${{ steps.set_env.outputs.s3_account }}
-
-    steps:
-      - name: set env
-        id: set_env
-        run: |
-          echo "region=${{ vars.REGION }}" >> $GITHUB_OUTPUT
-          echo "s3_bucket=${{ vars.S3_BUCKET }}" >> $GITHUB_OUTPUT
-          echo "s3_account=${{ vars.S3_ACCOUNT }}" >> $GITHUB_OUTPUT
-
-  pnpm-build:
-    name: Run Node Build
-    runs-on: ubuntu-latest
-    environment: aws
-    needs: [init]
-    strategy:
-      matrix:
-        node-version: ${{ fromJSON(inputs.node_versions) }}
-        # node-version: [14.x, 16.x, 18.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+      sightmind: ${{ steps.filter.outputs.sightmind }}
+      sightmind_minor: ${{ steps.filter.outputs.sightmind_minor }}  
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Filtering changed repository
+        uses: dorny/paths-filter@v3
+        id: filter
         with:
-          repository: cloud-development-team/${{ inputs.backend_repo }}
-          ref: refs/heads/${{ inputs.target_branch}}
-          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+          base: ${{ github.ref_name }}
+          filters: |
+            sightmind:
+              - './apps/**'
+            sightmind_minor:
+              - './apps-old/**'
+              
+  static-analysis:
+    name: Analysis code quality
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.sightmind == 'true' && github.event.ref == 'refs/heads/coverity' }}
+    uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
+    with:
+      REPO_NAME: sightmind-backend-mono
+      BUILD_PATH: apps
+      QUALITY_REPORT: true
+    secrets: inherit
 
-      - name: Setup Node.js
-        if: inputs.target_branch != 'production'
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
+  static-analysis-minor:
+    name: Analysis code quality
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && github.event.ref == 'refs/heads/coverity' }}
+    uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
+    with:
+      REPO_NAME: sightmind-backend-mono
+      BUILD_PATH: apps-old
+      QUALITY_REPORT: true
+    secrets: inherit
 
-      # - name: Cache npm dependencies
-      #   if: inputs.target_branch != 'production'
-      #   uses: actions/cache@v4
-      #   id: npm-cache
-      #   with:
-      #     path: ~/.npm
-      #     key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-node-${{ matrix.node-version }}-
+  build-and-push-to-s3:
+    name: Build and push artifact to s3
+    needs: detect-changes
+    if: ${{ (needs.detect-changes.outputs.sightmind == 'true') || (github.event.ref == 'refs/heads/production' && needs.detect-changes.outputs.sightmind_minor == 'true' ) }}
+    uses: ./.github/workflows/job_sm_backend_build.yaml
+    with:
+      working_dir: ./
+      version: major
+      release_env: ${{ inputs.release_env }}
+      backend_repo: ${{ inputs.backend_repo }}
+      target_branch: ${{ inputs.target_branch }}
+      release_version: ${{ inputs.release_version }}
+    secrets: inherit
 
-      - name: Login to NPM
-        if: inputs.target_branch != 'production'
-        working-directory: ${{ inputs.working_dir }}
-        run: |        
-          npm install -g npm-cli-login 
-          npm-cli-login -u hvc_automation -p ${{ env.GH_PAT_AUTOMATION }} -e sdo016-prod@hanwha.com -r https://npm.pkg.github.com
-
-      - name: Install specific npm version
-        run: npm install -g npm@10.7.0
-
-      - name: Verify npm version
-        run: npm --version
-
-      - name: Install dependencies
-        if: inputs.target_branch != 'production' && steps.npm-cache.outputs.cache-hit != 'true'
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          npm install
-
-      - name: Build
-        if: inputs.target_branch != 'production'
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          npm run build
-          echo "================"
-          ls -al apps/*/src
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.GH_OIDC_ROLE }}
-          role-session-name: GitHub-Actions-Assume
-          aws-region: ${{ needs.init.outputs.region }}
-
-      - name: Zip build output
-        if: inputs.target_branch != 'production'
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          zip -qry deploy.zip .
-
-      - name: Push build artifact to S3 Bucket
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          # Assume Role using an Automation Key
-          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ needs.init.outputs.s3_account }}:role/AWSControlTowerExecution --role-session-name AWS)
-          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
-          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-
-          # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
-          if [ ${{ inputs.target_branch }}  == "production" ]; then
-            echo "production upload"
-            aws s3 cp s3://sm018-cicd-q-ue1/backend/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
-            # aws s3 cp s3://sm018-hotfix-cicd-d-an2/backend/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
-          else
-            aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
-          fi
-          
-          aws sts get-caller-identity
+  build-and-push-to-s3-minor:
+    name: Build and push artifact to s3 (minor)
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && github.event.ref != 'refs/heads/production' }}
+    uses: ./.github/workflows/job_sm_backend_build.yaml
+    with:
+      working_dir: ./
+      version: minor
+      release_env: ${{ inputs.release_env }}
+      backend_repo: ${{ inputs.backend_repo }}
+      target_branch: ${{ inputs.target_branch }}
+      release_version: ${{ inputs.release_version }}
+    secrets: inherit

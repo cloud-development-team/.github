@@ -95,7 +95,7 @@ jobs:
     name: Build and release
     if: ${{ inputs.target_branch == 'production' && needs.detect-changes.outputs.sightmind_minor == 'true' }}
     needs: detect-changes
-    uses: ./.github/workflows/job_sm_pnpm_build.yaml
+    uses: ./.github/workflows/job_sm_frontend_build.yaml
     with:
       working_dir: ./apps/sightmind
       release_env: ${{ inputs.release_env }}
@@ -108,7 +108,7 @@ jobs:
     name: Build and release(minor)
     if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && inputs.target_branch != 'production' }}
     needs: detect-changes
-    uses: ./.github/workflows/job_sm_pnpm_build.yaml
+    uses: ./.github/workflows/job_sm_frontend_build.yaml
     with:
       working_dir: ./apps/sightmind_minor
       release_env: ${{ inputs.release_env }}
