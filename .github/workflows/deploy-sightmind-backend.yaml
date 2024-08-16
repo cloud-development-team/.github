@@ -57,7 +57,7 @@ jobs:
         uses: dorny/paths-filter@v3
         id: filter
         with:
-          base: ${{ github.ref_name }}
+          base: ${{ inputs.target_branch }}
           filters: |
             sightmind:
               - './apps/**'
