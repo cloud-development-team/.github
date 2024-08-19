@@ -109,6 +109,13 @@ jobs:
             fi
           done < qa_version.yaml
 
+      - name: Copy the qa_version.yaml file to prod_version.yaml file.
+        run: |
+          pwd
+          ls -la
+          cp qa_version.yaml prod_version.yaml
+          cp qa_version.json prod_version.json
+
       - name: Commit changes
         run: |
           git config user.name "GitHub Actions Bot" && \
@@ -138,7 +145,74 @@ jobs:
       #     aws s3 sync s3://${{ inputs.qa_fe_bucket }}/beforejira/public s3://${{ inputs.qa_fe_bucket }}/public --delete
 
       #     aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cf_distribution_id }} --paths "/*"
-  
+
+  hotfix-deploy:
+    name: DMPro HOTFIX Deploy
+    if: ${{ inputs.release_env == 'HOTFIX' }}
+    environment: main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/${{ inputs.release_repo }}
+          ref: refs/heads/main
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          
+      - name: Update version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' hotfix_version.json     
+
+      - name: Get Time
+        id: time
+        uses: nanzm/get-time-action@master
+        with:
+          timeZone: UTC-9
+          format: 'YYYY-MM-DD HH:mm:ss'
+
+      - name: Update Release date to version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' hotfix_version.json
+
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Deploy
+        run: |
+          while IFS= read -r line; do
+            if [[ "${line:0:1}" != " " ]]; then
+              service_name=$(echo "$line" | awk -F':' '{print $1}')
+            elif [[ $line == *"image-tag"* ]]; then
+              image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
+              yq -i '
+                .image.tag = "'$image_tag'"
+              ' ./$service_name/env/hotfix.yaml || true
+            fi
+          done < hotfix_version.yaml
+
+      - name: Copy the hotfix_version.yaml file to prod_version.yaml file.
+        run: |
+          pwd
+          ls -la
+          cp hotfix_version.yaml prod_version1.yaml
+          cp hotfix_version.json prod_version1.json
+
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "cd: deploy hotfix for ${{ inputs.release_version }}" && \
+          git push origin main
+        continue-on-error: true
+
   prod-deploy:
     name: DMPro PROD Deploy
     if: ${{ inputs.release_env == 'PROD' }}
@@ -152,13 +226,6 @@ jobs:
           repository: cloud-development-team/${{ inputs.release_repo }}
           ref: refs/heads/main
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-
-      - name: Copy the qa_version.yaml file to prod_version.yaml file.
-        run: |
-          pwd
-          ls -la
-          cp qa_version.yaml prod_version.yaml
-          cp qa_version.json prod_version.json
           
       - name: Update version.json information
         uses: mikefarah/yq@v4.34.2
