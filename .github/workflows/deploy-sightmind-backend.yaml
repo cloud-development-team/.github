@@ -40,11 +40,17 @@ on:
           required: true
           default: ""
           type: string
+      target_version:
+          description: 'Target Version'
+          required: false
+          default: ""
+          type: string
 
 jobs:
   detect-changes:
     name: Detect SightMind changes
     runs-on: ubuntu-latest
+    if: ${{ inputs.target_branch != 'production' }}
     outputs:
       sightmind: ${{ steps.filter.outputs.sightmind }}
       sightmind_minor: ${{ steps.filter.outputs.sightmind_minor }}  
@@ -88,7 +94,7 @@ jobs:
   build-and-push-to-s3:
     name: Build and push artifact to s3
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.sightmind == 'true' }}
+    if: ${{ needs.detect-changes.outputs.sightmind == 'true' || inputs.target_version == 'major' || inputs.release_version == 'hotfix' }}
     uses: ./.github/workflows/job_sm_backend_build.yaml
     with:
       working_dir: ./
@@ -97,12 +103,13 @@ jobs:
       backend_repo: ${{ inputs.backend_repo }}
       target_branch: ${{ inputs.target_branch }}
       release_version: ${{ inputs.release_version }}
+      target_version: ${{ inputs.target_version }}
     secrets: inherit
 
   build-and-push-to-s3-minor:
     name: Build and push artifact to s3 (minor)
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' }}
+    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' || inputs.target_version == 'minor'}}
     uses: ./.github/workflows/job_sm_backend_build.yaml
     with:
       working_dir: ./

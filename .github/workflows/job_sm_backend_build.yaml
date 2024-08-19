@@ -40,6 +40,11 @@ on:
           required: true
           default: ""
           type: string
+      target_version:
+          description: 'Target Version'
+          required: false
+          default: ""
+          type: string
       version:
         required: true
         description: "minor or major version"
@@ -160,16 +165,17 @@ jobs:
           # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
           if [ ${{ inputs.target_branch }}  == "production" ]; then
             echo "production upload"
-            if [ ${{ inputs.version }} =="major" ]; then
-              aws s3 cp s3://sm018-cicd-q-ue1/backend/major/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/major/deploy.zip --only-show-errors
-            else
-              aws s3 cp s3://sm018-cicd-q-ue1/backend/minor/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/minor/deploy.zip --only-show-errors
+            if [ ${{ inputs.target_version }} =="hotfix" ]; then
+              aws s3 cp s3://sm018-hotfix-cicd-d-an2/backend/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors 
+            elif [ ${{ inputs.version }} =="major" ]; then
+              aws s3 cp s3://sm018-cicd-q-ue1/backend/major/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors
+            elif [ ${{ inputs.version }} =="minor" ]; then
+              aws s3 cp s3://sm018-cicd-q-ue1/backend/minor/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors
             fi
-            # aws s3 cp s3://sm018-hotfix-cicd-d-an2/backend/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors 
           else
             if [ ${{ inputs.version }} =="major" ]; then
               aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/major/deploy.zip --only-show-errors 
-            else
+            elif [ ${{ inputs.version }} =="minor" ]; then
               aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/minor/deploy.zip --only-show-errors 
             fi
           fi
