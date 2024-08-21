@@ -57,6 +57,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with: 
+          repository: cloud-development-team/${{ inputs.backend_repo }}
+          ref: refs/heads/${{ inputs.target_branch}}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Filtering changed repository
         uses: dorny/paths-filter@v3
