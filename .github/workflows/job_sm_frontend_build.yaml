@@ -155,15 +155,15 @@ jobs:
 
           
           # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
-          if [ ${{ inputs.target_branch }}  == "production" ]; then
+          if [ "${{ inputs.target_branch }}" == "production" ]; then
           # aws s3 sync s3://sm018-static-q-ue1/hotfix/build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-            if [ ${{ needs.initial-tasks.outputs.production_version }}  == "major" ]; then
+            if [ "${{ needs.initial-tasks.outputs.production_version }}"  == "major" ]; then
               aws s3 sync s3://sm018-static-q-ue1/release/build/major s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
             else
               aws s3 sync s3://sm018-static-q-ue1/release/build/minor s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
             fi
           else
-            if [ ${{ inputs.working_dir }}  == "./apps/sightmind" ]; then
+            if [ "${{ inputs.working_dir }}"  == "./apps/sightmind" ]; then
               aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/major --delete --region ${{ needs.initial-tasks.outputs.region }}
             else
               aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/minor --delete --region ${{ needs.initial-tasks.outputs.region }}
