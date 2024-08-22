@@ -52,6 +52,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           repository: cloud-development-team/${{ inputs.frontend_repo }}
           ref: refs/heads/${{ inputs.target_branch}}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
