@@ -73,7 +73,6 @@ jobs:
             elif grep -q "BOTH" <<< "${{ inputs.release_env }}"; then
               target_version=both
             fi
-          fi
           elif grep -q "PROD" <<< "${{ inputs.release_env }}"; then
             target_branch=production
             if grep -q "MINOR" <<< "${{ inputs.release_env }}"; then
