@@ -58,7 +58,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with: 
-          fetch-depth: 0
           repository: cloud-development-team/${{ inputs.backend_repo }}
           ref: refs/heads/${{ inputs.target_branch}}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
@@ -99,7 +98,8 @@ jobs:
   build-and-push-to-s3:
     name: Build and push artifact to s3
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.sightmind == 'true' || inputs.target_version == 'major' || inputs.release_version == 'hotfix' }}
+    # if: ${{ needs.detect-changes.outputs.sightmind == 'true' || inputs.target_version == 'major' || inputs.release_version == 'hotfix' }}
+    if: ${{ inputs.target_version == 'major' || inputs.release_version == 'hotfix' || inputs.target_version == 'both'}}
     uses: ./.github/workflows/job_sm_backend_build.yaml
     with:
       working_dir: ./
@@ -114,7 +114,8 @@ jobs:
   build-and-push-to-s3-minor:
     name: Build and push artifact to s3 (minor)
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' || inputs.target_version == 'minor'}}
+    # if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' || inputs.target_version == 'minor'}}
+    if: ${{ inputs.target_version == 'minor' || inputs.target_version == 'both' }}
     uses: ./.github/workflows/job_sm_backend_build.yaml
     with:
       working_dir: ./
