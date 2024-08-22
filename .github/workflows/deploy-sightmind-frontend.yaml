@@ -52,7 +52,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           repository: cloud-development-team/${{ inputs.frontend_repo }}
           ref: refs/heads/${{ inputs.target_branch}}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
@@ -107,7 +106,8 @@ jobs:
 
   build-and-release-minor:
     name: Build and release(minor)
-    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && inputs.target_branch != 'production' }}
+    # if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && inputs.target_branch != 'production' }}
+    if: ${{ inputs.target_branch != 'production' }}
     needs: detect-changes
     uses: ./.github/workflows/job_sm_frontend_build.yaml
     with:

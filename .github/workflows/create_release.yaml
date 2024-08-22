@@ -66,6 +66,13 @@ jobs:
 
           if grep -q "QA" <<< "${{ inputs.release_env }}"; then
             target_branch=release
+            if grep -q "MINOR" <<< "${{ inputs.release_env }}"; then
+              target_version=minor
+            elif grep -q "MAJOR" <<< "${{ inputs.release_env }}"; then
+              target_version=major
+            elif grep -q "BOTH" <<< "${{ inputs.release_env }}"; then
+              target_version=both
+          fi
           elif grep -q "PROD" <<< "${{ inputs.release_env }}"; then
             target_branch=production
             if grep -q "MINOR" <<< "${{ inputs.release_env }}"; then
