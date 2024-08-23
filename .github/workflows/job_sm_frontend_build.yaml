@@ -40,6 +40,16 @@ on:
         required: true
         default: ""
         type: string
+      target_version:
+        description: 'Target Version'
+        required: false
+        default: ""
+        type: string
+      version:
+        required: true
+        description: "minor or major version"
+        type: string
+        default: ""
 
     secrets:
       CODEFREEZE:
@@ -60,6 +70,7 @@ jobs:
       s3_bucket: ${{ steps.set_env.outputs.s3_bucket }}
       s3_account: ${{ steps.set_env.outputs.s3_account }}
       cloudfront_distribution_id: ${{ vars.CF_DISTRIBUTION_ID }}
+      cloudfront_distribution_id_minor: ${{ vars.CF_DISTRIBUTION_ID_MINOR }}
       production_version: ${{ vars.SM_FRONTEND_PRODUCTION_VERSION }}
   
     steps:
@@ -156,20 +167,28 @@ jobs:
           
           # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
           if [ "${{ inputs.target_branch }}" == "production" ]; then
-          # aws s3 sync s3://sm018-static-q-ue1/hotfix/build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-            if [ "${{ needs.initial-tasks.outputs.production_version }}"  == "major" ]; then
+            if [ "${{ inputs.target_version }}" == "hotfix" ]; then
+              aws s3 sync s3://sm018-static-q-ue1/hotfix/build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
+            elif [ "${{ inputs.version }}" == "major" ]; then
               aws s3 sync s3://sm018-static-q-ue1/release/build/major s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-            else
+            elif [ "${{ inputs.version }}" == "minor" ]; then
               aws s3 sync s3://sm018-static-q-ue1/release/build/minor s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
             fi
           else
-            if [ "${{ inputs.working_dir }}"  == "./apps/sightmind" ]; then
+            if [ "${{ inputs.version }}" == "major" ]; then
               aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/major --delete --region ${{ needs.initial-tasks.outputs.region }}
-            else
+            elif [ "${{ inputs.version }}" == "minor" ]; then
               aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/minor --delete --region ${{ needs.initial-tasks.outputs.region }}
             fi
           fi
 
           # Setting CloudFront
-          aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id }} --paths "/*"
+          if [ "${{ inputs.version }}" == "major" ]; then
+            aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id }} --paths "/*"
+          if [ "${{ inputs.version }}" == "minor" ]; then
+            aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id_minor }} --paths "/*"
+          else
+            aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id }} --paths "/*"
+            aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id_minor }} --paths "/*"
+          fi
   
