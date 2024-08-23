@@ -46,59 +46,34 @@ on:
           default: ""
           type: string
 
-jobs:
-  detect-changes:
-    name: Detect SightMind changes
-    runs-on: ubuntu-latest
-    if: ${{ inputs.target_branch != 'production' }}
-    outputs:
-      sightmind: ${{ steps.filter.outputs.sightmind }}
-      sightmind_minor: ${{ steps.filter.outputs.sightmind_minor }}  
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with: 
-          repository: cloud-development-team/${{ inputs.backend_repo }}
-          ref: refs/heads/${{ inputs.target_branch}}
-          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
-      - name: Filtering changed repository
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          base: ${{ inputs.target_branch }}
-          filters: |
-            sightmind:
-              - './apps/**'
-            sightmind_minor:
-              - './apps-old/**'
-              
+jobs:     
   static-analysis:
     name: Analysis code quality
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.sightmind == 'true' && inputs.target_branch == 'release' }}
+    if: ${{ (inputs.target_version == 'major' || inputs.target_version == 'both') && inputs.target_branch == 'release' }}
     uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
     with:
       REPO_NAME: sightmind-backend-mono
       BUILD_PATH: apps
       QUALITY_REPORT: true
-    secrets: inherit
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+      AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
   static-analysis-minor:
     name: Analysis code quality
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && inputs.target_branch == 'release' }}
+    if: ${{ (inputs.target_version == 'major' || inputs.target_version == 'both') && inputs.target_branch == 'release' }}
     uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
     with:
       REPO_NAME: sightmind-backend-mono
       BUILD_PATH: apps-old
       QUALITY_REPORT: true
-    secrets: inherit
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+      AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
   build-and-push-to-s3:
     name: Build and push artifact to s3
-    needs: detect-changes
-    # if: ${{ needs.detect-changes.outputs.sightmind == 'true' || inputs.target_version == 'major' || inputs.release_version == 'hotfix' }}
     if: ${{ inputs.target_version == 'major' || inputs.release_version == 'hotfix' || inputs.target_version == 'both'}}
     uses: ./.github/workflows/job_sm_backend_build.yaml
     with:
@@ -113,8 +88,6 @@ jobs:
 
   build-and-push-to-s3-minor:
     name: Build and push artifact to s3 (minor)
-    needs: detect-changes
-    # if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' || inputs.target_version == 'minor'}}
     if: ${{ inputs.target_version == 'minor' || inputs.target_version == 'both' }}
     uses: ./.github/workflows/job_sm_backend_build.yaml
     with:
@@ -124,4 +97,5 @@ jobs:
       backend_repo: ${{ inputs.backend_repo }}
       target_branch: ${{ inputs.target_branch }}
       release_version: ${{ inputs.release_version }}
+      target_version: ${{ inputs.target_version }}
     secrets: inherit

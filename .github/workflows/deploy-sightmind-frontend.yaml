@@ -40,80 +40,63 @@ on:
           required: true
           default: ""
           type: string
+      target_version:
+          description: 'Target Version'
+          required: false
+          default: ""
+          type: string
 
 jobs:
-  detect-changes:
-    name: Detect SightMind changes
-    runs-on: ubuntu-latest
-    outputs:
-      sightmind: ${{ steps.filter.outputs.sightmind }}
-      sightmind_minor: ${{ steps.filter.outputs.sightmind_minor }}  
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          repository: cloud-development-team/${{ inputs.frontend_repo }}
-          ref: refs/heads/${{ inputs.target_branch}}
-          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-
-      - name: Filtering changed repository
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          base: ${{ inputs.target_branch }}
-          filters: |
-            sightmind:
-              - './apps/sightmind/**'
-            sightmind_minor:
-              - './apps/sightmind_minor/**'
-
   statitic-analysis:
     name: Analysis code quality
-    if: ${{ needs.detect-changes.outputs.sightmind == 'true' && inputs.target_branch == 'release' }}
+    if: ${{ (inputs.target_version == 'major' || inputs.target_version == 'both') && inputs.target_branch == 'release' }}
     uses: ./.github/workflows/static-analysis.yaml
-    needs: detect-changes
     with:
       REPO_NAME: hc-frontend-mono
       BUILD_PATH: apps/sightmind
       QUALITY_REPORT: true
       STREAM: sightmind-hc-frontend-mono
-    secrets: inherit
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+      AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
   
   statitic-analysis-minor:
     name: Analysis code quality
-    if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && inputs.target_branch == 'release' }}
+    if: ${{ (inputs.target_version == 'minor' || inputs.target_version == 'both') && inputs.target_branch == 'release' }}
     uses: ./.github/workflows/static-analysis.yaml
-    needs: detect-changes
     with:
       REPO_NAME: hc-frontend-mono
       BUILD_PATH: apps/sightmind_minor
       QUALITY_REPORT: true
       STREAM: sightmind-hc-frontend-mono
-    secrets: inherit
+    secrets:
+      GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+      AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
   build-and-release:
     name: Build and release
-    if: ${{ inputs.target_branch == 'production' && needs.detect-changes.outputs.sightmind_minor == 'true' }}
-    needs: detect-changes
+    if: ${{ inputs.target_version == 'major' || inputs.release_version == 'hotfix' || inputs.target_version == 'both'}}
     uses: ./.github/workflows/job_sm_frontend_build.yaml
     with:
       working_dir: ./apps/sightmind
+      version: major
       release_env: ${{ inputs.release_env }}
       frontend_repo: ${{ inputs.frontend_repo }}
       target_branch: ${{ inputs.target_branch }}
       release_version: ${{ inputs.release_version }}
+      target_version: ${{ inputs.target_version }}
     secrets: inherit
 
   build-and-release-minor:
     name: Build and release(minor)
-    # if: ${{ needs.detect-changes.outputs.sightmind_minor == 'true' && inputs.target_branch != 'production' }}
-    if: ${{ inputs.target_branch != 'production' }}
-    needs: detect-changes
+    if: ${{ inputs.target_version == 'minor' || inputs.target_version == 'both'}}
     uses: ./.github/workflows/job_sm_frontend_build.yaml
     with:
       working_dir: ./apps/sightmind_minor
+      version: minor
       release_env: ${{ inputs.release_env }}
       frontend_repo: ${{ inputs.frontend_repo }}
       target_branch: ${{ inputs.target_branch }}
       release_version: ${{ inputs.release_version }}
+      target_version: ${{ inputs.target_version }}
     secrets: inherit

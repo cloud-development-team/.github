@@ -49,7 +49,7 @@ on:
         required: true
         description: "minor or major version"
         type: string
-        default: "major"
+        default: ""
 
 env:
   CODEFREEZE: ${{ secrets.CODEFREEZE }}
