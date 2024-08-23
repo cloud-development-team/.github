@@ -56,6 +56,7 @@ jobs:
       REPO_NAME: sightmind-backend-mono
       BUILD_PATH: apps
       QUALITY_REPORT: true
+      environment: main
     secrets:
       GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
       AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
@@ -68,6 +69,7 @@ jobs:
       REPO_NAME: sightmind-backend-mono
       BUILD_PATH: apps-old
       QUALITY_REPORT: true
+      environment: main
     secrets:
       GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
       AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}

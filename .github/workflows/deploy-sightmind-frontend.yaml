@@ -56,6 +56,7 @@ jobs:
       BUILD_PATH: apps/sightmind
       QUALITY_REPORT: true
       STREAM: sightmind-hc-frontend-mono
+      environment: main
     secrets:
       GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
       AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
@@ -69,6 +70,7 @@ jobs:
       BUILD_PATH: apps/sightmind_minor
       QUALITY_REPORT: true
       STREAM: sightmind-hc-frontend-mono
+      environment: main
     secrets:
       GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
       AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
