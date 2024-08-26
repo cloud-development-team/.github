@@ -63,7 +63,7 @@ jobs:
 
   static-analysis-minor:
     name: Analysis code quality
-    if: ${{ (inputs.target_version == 'major' || inputs.target_version == 'both') && inputs.target_branch == 'release' }}
+    if: ${{ (inputs.target_version == 'minor' || inputs.target_version == 'both') && inputs.target_branch == 'release' }}
     uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
     with:
       REPO_NAME: sightmind-backend-mono
