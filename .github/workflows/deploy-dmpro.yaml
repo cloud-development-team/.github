@@ -125,26 +125,26 @@ jobs:
           git push origin main
         continue-on-error: true
 
-      # # Login To HVC_Admin_Automation for Deploy
-      # - name: Configure AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
-      #     role-session-name: GitHub-Actions-Assume
-      #     aws-region: us-east-1
-
-      # # Assume to Each Account as AWSControlTowerExecution
-      # - name: Push build artifact to S3 Bucket and invalidation CloudFront
+      # # Static file upload
+      # - name: Static File Update - QA
       #   run: |
-      #     identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
-      #     export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
-      #     export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
-      #     export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+      #     export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+      #     $(aws sts assume-role \
+      #     --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution \
+      #     --role-session-name GitHubPipeline \
+      #     --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+      #     --output text))
 
-      #     aws s3 sync s3://${{ inputs.qa_fe_bucket }}/beforejira/_next/static s3://${{ inputs.qa_fe_bucket }}/_next/static  --delete
-      #     aws s3 sync s3://${{ inputs.qa_fe_bucket }}/beforejira/public s3://${{ inputs.qa_fe_bucket }}/public --delete
+      #     # Check who am I
+      #     aws sts get-caller-identity
 
+      #     # Sync S3 Bucket
+      #     aws s3 sync s3://${{ inputs.qa_fe_bucket }}/pre-out s3://${{ inputs.qa_fe_bucket }}/out --delete
+      #     aws s3 rm s3://${{ inputs.qa_fe_bucket }}/pre-out --recursive
+
+      #     # Setting CloudFront
       #     aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cf_distribution_id }} --paths "/*"
+
 
   hotfix-deploy:
     name: DMPro HOTFIX Deploy
@@ -273,25 +273,42 @@ jobs:
           git push origin main
         continue-on-error: true
       
-      # # Login To HVC_Admin_Automation for Deploy
-      # - name: Configure AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
-      #     role-session-name: GitHub-Actions-Assume
-      #     aws-region: us-east-1
+      # Login To HVC_Admin_Automation for Deploy
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+          role-session-name: GitHub-Actions-Assume
+          aws-region: us-east-1
 
-      # # Assume to Each Account as AWSControlTowerExecution
-      # - name: Push build artifact to S3 Bucket and invalidation CloudFront
+      # # Static file upload
+      # - name: Static File Update - PROD
       #   run: |
-      #     # Assume Role using an Automation Key
-      #     identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution --role-session-name AWS)
-      #     export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
-      #     export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
-      #     export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+      #     export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+      #     $(aws sts assume-role \
+      #     --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution \
+      #     --role-session-name GitHubPipeline \
+      #     --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+      #     --output text))
 
-      #     # aws s3 sync s3://${{ inputs.prod_fe_bucket }}/_next/static s3://${{ inputs.prod_fe_bucket }}/_next/static  --delete
-      #     # aws s3 sync s3://${{ inputs.qa_fe_bucket }}/public s3://${{ inputs.dev_fe_bucket }}/public --delete
+      #     # Check who am I
+      #     aws sts get-caller-identity
+
+      #     # Sync S3 Bucket
+      #     aws s3 sync s3://${{ inputs.qa_fe_bucket }}/out ./out           
+
+      #     export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+      #     $(aws sts assume-role \
+      #     --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution \
+      #     --role-session-name GitHubPipeline \
+      #     --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+      #     --output text))
+
+      #     # Sync S3 Bucket
+      #     aws s3 sync ./out s3://${{ inputs.prod_fe_bucket }}/out --delete
 
       #     # Setting CloudFront
-      #     aws cloudfront create-invalidation --distribution-id ${{ inputs.dev_cf_distribution_id }} --paths "/*"
+      #     aws cloudfront create-invalidation --distribution-id ${{ inputs.prod_cf_distribution_id }} --paths "/*"
+
+
+
