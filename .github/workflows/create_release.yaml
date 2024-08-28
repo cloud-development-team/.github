@@ -50,7 +50,9 @@ jobs:
           if [ "${{ inputs.jira_key }}" == "CPD" ] || [ "${{ inputs.jira_key }}" == "KDOG" ]; then
             repo=dmpro-gitops
             branch=main
+            echo "set env dmpro"
           elif [ "${{ inputs.jira_key }}" == "IS360" ]; then
+            echo "set env sightmind"
             backend_repo=sightmind-backend-mono
             frontend_repo=hc-frontend-mono
             auth_repo=hvcp-authorization
