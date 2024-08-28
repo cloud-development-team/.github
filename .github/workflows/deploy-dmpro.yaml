@@ -125,25 +125,25 @@ jobs:
           git push origin main
         continue-on-error: true
 
-      # # Static file upload
-      # - name: Static File Update - QA
-      #   run: |
-      #     export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
-      #     $(aws sts assume-role \
-      #     --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution \
-      #     --role-session-name GitHubPipeline \
-      #     --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
-      #     --output text))
+      # Static file upload
+      - name: Static File Update - QA
+        run: |
+          export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+          $(aws sts assume-role \
+          --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution \
+          --role-session-name GitHubPipeline \
+          --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+          --output text))
 
-      #     # Check who am I
-      #     aws sts get-caller-identity
+          # Check who am I
+          aws sts get-caller-identity
 
-      #     # Sync S3 Bucket
-      #     aws s3 sync s3://${{ inputs.qa_fe_bucket }}/pre-out s3://${{ inputs.qa_fe_bucket }}/out --delete
-      #     aws s3 rm s3://${{ inputs.qa_fe_bucket }}/pre-out --recursive
+          # Sync S3 Bucket
+          aws s3 sync s3://${{ inputs.qa_fe_bucket }}/pre-out s3://${{ inputs.qa_fe_bucket }}/out --delete
+          aws s3 rm s3://${{ inputs.qa_fe_bucket }}/pre-out --recursive
 
-      #     # Setting CloudFront
-      #     aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cf_distribution_id }} --paths "/*"
+          # Setting CloudFront
+          aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cf_distribution_id }} --paths "/*"
 
 
   hotfix-deploy:
