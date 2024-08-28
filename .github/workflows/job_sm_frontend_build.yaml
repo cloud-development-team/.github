@@ -185,7 +185,7 @@ jobs:
           # Setting CloudFront
           if [ "${{ inputs.version }}" == "major" ]; then
             aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id }} --paths "/*"
-          if [ "${{ inputs.version }}" == "minor" ]; then
+          elif [ "${{ inputs.version }}" == "minor" ]; then
             aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id_minor }} --paths "/*"
           else
             aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id }} --paths "/*"
