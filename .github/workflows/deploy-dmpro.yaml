@@ -126,11 +126,11 @@ jobs:
         continue-on-error: true
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with: 
-          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_AUTOMATION }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY_AUTOMATION }}
-          aws-region: ${{ needs.init.outputs.region }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+          role-session-name: GitHub-Actions-Assume
+          aws-region: us-east-1
 
       # Static file upload
       - name: Static File Update - QA
