@@ -142,16 +142,22 @@ jobs:
           --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
           --output text))
 
-          # Check who am I
-          aws sts get-caller-identity
+          if aws s3 ls s3://${{ inputs.qa_fe_bucket }}/pre-out/ ; then
+            echo "S3 path s3://${{ inputs.qa_fe_bucket }}/pre-out exist. "
+            # # Check who am I
+            # aws sts get-caller-identity
 
-          # Sync S3 Bucket
-          aws s3 sync s3://${{ inputs.qa_fe_bucket }}/pre-out s3://${{ inputs.qa_fe_bucket }}/out --delete
-          aws s3 rm s3://${{ inputs.qa_fe_bucket }}/pre-out --recursive
+            # # Sync S3 Bucket
+            # aws s3 sync s3://${{ inputs.qa_fe_bucket }}/pre-out s3://${{ inputs.qa_fe_bucket }}/out --delete
+            # aws s3 rm s3://${{ inputs.qa_fe_bucket }}/pre-out --recursive
 
-          # Setting CloudFront
-          aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cf_distribution_id }} --paths "/*"
+            # # Setting CloudFront
+            # aws cloudfront create-invalidation --distribution-id ${{ inputs.qa_cf_distribution_id }} --paths "/*"
+            
 
+          else
+            echo "S3 path s3://${{ inputs.qa_fe_bucket }}/pre-out does not exist. Skipping sync and invalidation."
+          fi
 
   hotfix-deploy:
     name: DMPro HOTFIX Deploy
