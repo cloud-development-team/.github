@@ -48,32 +48,6 @@ on:
 
 
 jobs:     
-  static-analysis:
-    name: Analysis code quality
-    if: ${{ (inputs.target_version == 'major' || inputs.target_version == 'both') && inputs.target_branch == 'release' }}
-    uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
-    with:
-      REPO_NAME: sightmind-backend-mono
-      BUILD_PATH: apps
-      QUALITY_REPORT: true
-      environment: main
-    secrets:
-      GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-      AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-
-  static-analysis-minor:
-    name: Analysis code quality
-    if: ${{ (inputs.target_version == 'minor' || inputs.target_version == 'both') && inputs.target_branch == 'release' }}
-    uses: cloud-development-team/.github/.github/workflows/static-analysis.yaml@main
-    with:
-      REPO_NAME: sightmind-backend-mono
-      BUILD_PATH: apps-old
-      QUALITY_REPORT: true
-      environment: main
-    secrets:
-      GH_MANAGEPACKAGE_TOKEN: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
-      AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-
   build-and-push-to-s3:
     name: Build and push artifact to s3
     if: ${{ inputs.target_version == 'major' || inputs.release_version == 'hotfix' || inputs.target_version == 'both'}}
