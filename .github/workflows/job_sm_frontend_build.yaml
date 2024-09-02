@@ -168,7 +168,7 @@ jobs:
           # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
           if [ "${{ inputs.target_branch }}" == "production" ]; then
             if [ "${{ inputs.target_version }}" == "hotfix" ]; then
-              aws s3 sync s3://sm018-static-q-ue1/hotfix/build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
+              aws s3 sync s3://sm018-hotfix-static-d-an2/hotfix/build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
             elif [ "${{ inputs.version }}" == "major" ]; then
               aws s3 sync s3://sm018-static-q-ue1/release/build/major s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
             elif [ "${{ inputs.version }}" == "minor" ]; then
