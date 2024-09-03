@@ -40,6 +40,11 @@ on:
           required: true
           default: ""
           type: string
+      target_version:
+          description: 'Target Version'
+          required: false
+          default: ""
+          type: string
 
 env:
   CODEFREEZE: ${{ secrets.CODEFREEZE }}
@@ -149,8 +154,11 @@ jobs:
           # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
           if [ "${{ inputs.target_branch }}"  == "production" ]; then
             echo "production upload"
-            aws s3 cp s3://vcm021-cicd-q-ue1/authZ/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
-            # aws s3 cp s3://sm018-hotfix-cicd-d-an2/backend/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
+            if [ "${{ inputs.target_version }}" == "hotfix" ]; then
+              aws s3 cp s3://vcm021-hotfix-cicd-d-an2/authZ/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
+            else
+              aws s3 cp s3://vcm021-cicd-q-ue1/authZ/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
+            fi
           else
             aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors  --metadata version=${{ inputs.release_version }}
           fi
