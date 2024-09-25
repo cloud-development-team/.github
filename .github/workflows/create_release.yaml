@@ -25,15 +25,16 @@ jobs:
   initial_setting:
     if: github.actor == 'jenkins-se'
     outputs:
-      repo: ${{ steps.set_env.outputs.repo }}
-      branch: ${{ steps.set_env.outputs.branch }}
+      dm_be_repo: ${{ steps.set_env.outputs.dm_be_repo }}
+      dm_fe_repo: ${{ steps.set_env.outputs.dm_fe_repo }}
+      dm_sw_ver: ${{ steps.set_env.outputs.dm_sw_ver }}
+      dm_fe_branch: ${{ steps.set_env.outputs.dm_fe_branch }}
       backend_repo: ${{ steps.set_env.outputs.backend_repo }}
       frontend_repo: ${{ steps.set_env.outputs.frontend_repo }}
       auth_repo: ${{ steps.set_env.outputs.auth_repo }}
       release_env: ${{ steps.set_env.outputs.release_env }}
       release_version: ${{ steps.set_env.outputs.release_version }}
       target_branch: ${{ steps.set_env.outputs.target_branch }}
-      sw_ver: ${{ steps.set_env.outputs.sw_ver }}
       target_version: ${{ steps.set_env.outputs.target_version }}
       project: ${{ steps.set_env.outputs.project }}
       matrix: ${{ steps.set_env.outputs.matrix }}
@@ -47,12 +48,32 @@ jobs:
       - name: Repository List
         id: set_env
         run: |
-          #elif [ ${{ inputs.jira_key }}  == "CPD" ]; then
           if [ "${{ inputs.jira_key }}" == "CPD" ] || [ "${{ inputs.jira_key }}" == "KDOG" ]; then
-            repo=dmpro-gitops
-            branch=main
-            sw_ver=major
+            dm_be_repo=dmpro-gitops
+            dm_fe_repo=hc-frontend-mono
+            if [ "${{ inputs.release_env }}" == "QA" ]; then
+                dm_fe_branch="qa"
+                dm_sw_ver="major"
+            elif [ "${{ inputs.release_env }}" == "QAMINOR" ]; then
+                dm_fe_branch="qa"
+                dm_sw_ver="minor"
+            elif [ "${{ inputs.release_env }}" == "HOTFIX" ]; then
+                dm_fe_branch="hotfix"
+                dm_sw_ver="major"
+            elif [ "${{ inputs.release_env }}" == "PROD" ]; then
+                dm_fe_branch="none"
+                dm_sw_ver="major"
+            elif [ "${{ inputs.release_env }}" == "PRODMINOR" ]; then
+                dm_fe_branch="none"
+                dm_sw_ver="minor"
+            fi
+
             echo "set env dmpro"
+            echo "dm_be_repo=$dm_be_repo" >> $GITHUB_OUTPUT
+            echo "dm_fe_repo=$dm_fe_repo" >> $GITHUB_OUTPUT
+            echo "dm_sw_ver=$dm_sw_ver" >> $GITHUB_OUTPUT
+            echo "dm_fe_branch=$dm_fe_branch" >> $GITHUB_OUTPUT
+
           elif [ "${{ inputs.jira_key }}" == "IS360" ]; then
             echo "set env sightmind"
             backend_repo=sightmind-backend-mono
@@ -81,7 +102,6 @@ jobs:
             target_branch=production
             if grep -q "MINOR" <<< "${{ inputs.release_env }}"; then
               target_version=minor
-              sw_ver = minor
             elif grep -q "MAJOR" <<< "${{ inputs.release_env }}"; then
               target_version=major
             fi
@@ -95,11 +115,12 @@ jobs:
           echo "repo=$repo" >> $GITHUB_OUTPUT
           echo "branch=$branch" >> $GITHUB_OUTPUT
           echo "target_branch=$target_branch" >> $GITHUB_OUTPUT
-          echo "sw_ver=$sw_ver" >> $GITHUB_OUTPUT
           echo "target_version=$target_version" >> $GITHUB_OUTPUT
           echo "release_env=${{ inputs.release_env }}" >> $GITHUB_OUTPUT
           echo "release_version=${{ inputs.release_version }}" >> $GITHUB_OUTPUT
           echo "project=$project" >> $GITHUB_OUTPUT
+
+        
 
       - name: Fail if environment is unknown
         if: ${{ steps.set_env.outputs.release_env == null }}
@@ -143,16 +164,16 @@ jobs:
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}" 
     
-  dmpro:
+  dmpro-backend:
     if: ${{ github.actor == 'jenkins-se' && (inputs.jira_key == 'KDOG' || inputs.jira_key == 'CPD') }}
-    needs: [initial_setting]
-    name: DMPro Deploy
+    needs: [initial_setting,create-github-releases-dmpro]
+    name: DMPro Backend Deploy
     uses: ./.github/workflows/deploy-dmpro.yaml
     with:
       release_version: ${{ inputs.release_version }}
       release_env: ${{ inputs.release_env }}
-      release_repo: ${{ needs.initial_setting.outputs.repo }}
-      sw_ver: ${{ needs.initial_setting.outputs.sw_ver }}
+      release_repo: ${{ needs.initial_setting.outputs.dm_be_repo }}
+      dm_sw_ver: ${{ needs.initial_setting.outputs.dm_sw_ver }}
     secrets: inherit  
 
   sightmind-backend:
@@ -202,7 +223,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current repository
-        if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'PROD' || inputs.release_env == 'HOTFIX'}}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -211,7 +231,6 @@ jobs:
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Create Github Release
-        if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'PROD' || inputs.release_env == 'HOTFIX'}}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
@@ -226,7 +245,6 @@ jobs:
             - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
 
       - name: Github Release Result
-        if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'PROD' || inputs.release_env == 'HOTFIX'}}
         run: |
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.repo }}/releases/tag/${{ inputs.release_version }}"
