@@ -68,7 +68,7 @@ jobs:
     uses: ./.github/workflows/job_sm_backend_build.yaml
     with:
       working_dir: ./
-      version: minor
+      version: major
       release_env: ${{ inputs.release_env }}
       backend_repo: ${{ inputs.backend_repo }}
       target_branch: ${{ inputs.target_branch }}
