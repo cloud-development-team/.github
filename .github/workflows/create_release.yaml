@@ -215,7 +215,7 @@ jobs:
       target_version: ${{ needs.initial_setting.outputs.target_version }}
     secrets: inherit  
 
-    create-github-release:
+  create-github-release:
     name: Create release
     if: ${{ github.actor == 'jenkins-se' && inputs.jira_key != 'IS360'}} 
     needs: [initial_setting , dmpro]
