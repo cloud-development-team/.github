@@ -130,15 +130,9 @@ jobs:
         if: inputs.target_branch != 'production'
         working-directory: ${{ inputs.working_dir }}
         run: |
-          if [ ${{ inputs.version }}  == "major" ]; then
-            npm run build
-            echo "================"
-            ls -al apps/*/src
-          else
-            npm run build:old
-            echo "================"
-            ls -al apps-old/*/src
-          fi
+          npm run build
+          echo "================"
+          ls -al apps/*/src
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -169,14 +163,12 @@ jobs:
               aws s3 cp s3://sm018-hotfix-cicd-d-an2/backend/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
             elif [ "${{ inputs.version }}" == "major" ]; then
               aws s3 cp s3://sm018-cicd-q-ue1/backend/major/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
-              aws s3 cp s3://sm018-cicd-q-ue1/backend/minor/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
             elif [ "${{ inputs.version }}" == "minor" ]; then
               aws s3 cp s3://sm018-cicd-q-ue1/backend/minor/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
             fi
           else
             if [ "${{ inputs.version }}" == "major" ]; then
               aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/major/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
-              aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/minor/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
             elif [ "${{ inputs.version }}" == "minor" ]; then
               aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/minor/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
             fi
