@@ -72,6 +72,7 @@ jobs:
         with:
           cmd: |
             yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
+            yq -i '.["JiraReleaseVersion"].["SWVersionn"] = "${{ inputs.dm_sw_ver }}"' qa_version.json     
 
       - name: Get Time
         id: time
@@ -256,6 +257,7 @@ jobs:
         with:
           cmd: |
             yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' prod_version.json     
+            yq -i '.["JiraReleaseVersion"].["SWVersionn"] = "${{ inputs.dm_sw_ver }}"' prod_version.json
 
       - name: Get Time
         id: time
