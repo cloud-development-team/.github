@@ -157,7 +157,12 @@ jobs:
         if: inputs.QUALITY_REPORT == true
         run: |
           echo "CI_STEP_CoverityReport"
-          python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile ${{ inputs.STREAM }}
+          if [ "${{ inputs.STREAM }}" != "" ] ; then
+            STREAM="${{ inputs.STREAM }}"
+          else
+            STREAM="${{ inputs.REPO_NAME }}"
+          fi
+          python3 /home/jenkins/coverity_utils/cov_auto_report.py Cloud non-compile $STREAM
 
       - name: Update deployment status (success)
         if: success()
