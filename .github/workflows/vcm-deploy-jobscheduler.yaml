@@ -25,6 +25,11 @@ on:
         required: true
         default: ""
         type: string
+      release_version:
+        description: 'Release Version'
+        required: true
+        default: ""
+        type: string
       target_repo:
         description: 'Release Version'
         required: true
