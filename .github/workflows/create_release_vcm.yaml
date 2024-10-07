@@ -25,19 +25,8 @@ jobs:
   initial_setting:
     if: github.actor == 'HVC-Automation'
     outputs:
-      dm_be_repo: ${{ steps.set_env.outputs.dm_be_repo }}
-      dm_fe_repo: ${{ steps.set_env.outputs.dm_fe_repo }}
-      dm_sw_ver: ${{ steps.set_env.outputs.dm_sw_ver }}
-      dm_fe_branch: ${{ steps.set_env.outputs.dm_fe_branch }}
-      backend_repo: ${{ steps.set_env.outputs.backend_repo }}
-      frontend_repo: ${{ steps.set_env.outputs.frontend_repo }}
-      auth_repo: ${{ steps.set_env.outputs.auth_repo }}
-      release_env: ${{ steps.set_env.outputs.release_env }}
-      release_version: ${{ steps.set_env.outputs.release_version }}
-      target_branch: ${{ steps.set_env.outputs.target_branch }}
-      target_version: ${{ steps.set_env.outputs.target_version }}
-      project: ${{ steps.set_env.outputs.project }}
-      matrix: ${{ steps.set_env.outputs.matrix }}
+      target_repo: ${{ steps.set_env.outputs.target_repo }}
+      target_branch: ${{ inputs.release_env == 'QA' && 'release' || 'production' }}  #QA, PROD
       
     name: Initial Setting
     runs-on: ubuntu-latest
@@ -48,79 +37,11 @@ jobs:
       - name: Repository List
         id: set_env
         run: |
-          if [ "${{ inputs.jira_key }}" == "CPD" ] || [ "${{ inputs.jira_key }}" == "KDOG" ]; then
-            dm_be_repo=dmpro-gitops
-            dm_fe_repo=hc-frontend-mono
-            if [ "${{ inputs.release_env }}" == "QA" ]; then
-                dm_fe_branch="qa"
-                dm_sw_ver="major"
-            elif [ "${{ inputs.release_env }}" == "QAMINOR" ]; then
-                dm_fe_branch="qa"
-                dm_sw_ver="minor"
-            elif [ "${{ inputs.release_env }}" == "HOTFIX" ]; then
-                dm_fe_branch="hotfix"
-                dm_sw_ver="major"
-            elif [ "${{ inputs.release_env }}" == "PROD" ]; then
-                dm_fe_branch="none"
-                dm_sw_ver="major"
-            elif [ "${{ inputs.release_env }}" == "PRODMINOR" ]; then
-                dm_fe_branch="none"
-                dm_sw_ver="minor"
-            fi
-
-            echo "set env dmpro"
-            echo "dm_be_repo=$dm_be_repo" >> $GITHUB_OUTPUT
-            echo "dm_fe_repo=$dm_fe_repo" >> $GITHUB_OUTPUT
-            echo "dm_sw_ver=$dm_sw_ver" >> $GITHUB_OUTPUT
-            echo "dm_fe_branch=$dm_fe_branch" >> $GITHUB_OUTPUT
-
-          elif [ "${{ inputs.jira_key }}" == "IS360" ]; then
-            echo "set env sightmind"
-            backend_repo=sightmind-backend-mono
-            frontend_repo=hc-frontend-mono
-            auth_repo=hvcp-authorization
-            matrix=$(jq -c '.' .github/workflows/files/matrix-sightmind-target-repo.json)
-
-            project=sm
-
-            echo "backend_repo=$backend_repo" >> $GITHUB_OUTPUT
-            echo "frontend_repo=$frontend_repo" >> $GITHUB_OUTPUT
-            echo "auth_repo=$auth_repo" >> $GITHUB_OUTPUT
-            echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          if grep -q "SCHD" <<< "${{ inputs.release_version }}"; then
+            repo=platform-job-scheduler
           fi
 
-          if grep -q "QA" <<< "${{ inputs.release_env }}"; then
-            target_branch=release
-            if grep -q "MINOR" <<< "${{ inputs.release_env }}"; then
-              target_version=minor
-            elif grep -q "MAJOR" <<< "${{ inputs.release_env }}"; then
-              target_version=major
-            elif grep -q "BOTH" <<< "${{ inputs.release_env }}"; then
-              target_version=both
-            fi
-          elif grep -q "PROD" <<< "${{ inputs.release_env }}"; then
-            target_branch=production
-            if grep -q "MINOR" <<< "${{ inputs.release_env }}"; then
-              target_version=minor
-            elif grep -q "MAJOR" <<< "${{ inputs.release_env }}"; then
-              target_version=major
-            fi
-          elif grep -q "hotfix" <<< "${{ inputs.release_env }}"; then
-            target_branch=production
-            target_version=hotfix
-          else
-            target_branch=null
-          fi
-          
-          echo "repo=$repo" >> $GITHUB_OUTPUT
-          echo "branch=$branch" >> $GITHUB_OUTPUT
-          echo "target_branch=$target_branch" >> $GITHUB_OUTPUT
-          echo "target_version=$target_version" >> $GITHUB_OUTPUT
-          echo "release_env=${{ inputs.release_env }}" >> $GITHUB_OUTPUT
-          echo "release_version=${{ inputs.release_version }}" >> $GITHUB_OUTPUT
-          echo "project=$project" >> $GITHUB_OUTPUT
-
-        
+          echo "target_repo=$repo" >> $GITHUB_OUTPUT
 
       - name: Fail if environment is unknown
         if: ${{ steps.set_env.outputs.release_env == null }}
@@ -128,97 +49,22 @@ jobs:
           echo "Environment is not QA, PROD, or HOTFIX. Failing the workflow."
           exit 1
 
-  parallel-create-release:
-    name: parallel create release
-    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
+  jobscheduler:
+    if: ${{ github.actor == 'HVC-Automation' && needs.initial_setting.outputs.target_repo == 'platform-job-scheduler' }} 
     needs: [initial_setting]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix: ${{ fromJson(needs.initial_setting.outputs.matrix) }}
-        
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          repository: cloud-development-team/${{ matrix.repo }}
-          ref: refs/heads/${{ needs.initial_setting.outputs.target_branch }}
-          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-
-      - name: Create Github Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-        with:
-          tag_name: ${{needs.initial_setting.outputs.project}}${{ inputs.release_version }}
-          release_name: ${{needs.initial_setting.outputs.project}}${{ inputs.release_version }}
-          repo: ${{ matrix.repo }}
-          commitish: ${{ needs.initial_setting.outputs.target_branch }}
-          body: |
-            🤖 This release was created by ${{ github.event.sender.login }}.
-            - More information about this release can be found in Jira Release. 🔍
-            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
-            - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
-
-      - name: Github Release Result
-        run: |
-          echo "🔍 Check the release results"
-          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}" 
-    
-  dmpro:
-    if: ${{ github.actor == 'jenkins-se' && (inputs.jira_key == 'KDOG' || inputs.jira_key == 'CPD') }}
-    needs: [initial_setting]
-    name: DMPro Backend Deploy
-    uses: ./.github/workflows/deploy-dmpro.yaml
+    name: Job Scheduler Deploy
+    uses: ./.github/workflows/vcm-deploy-jobscheduler.yaml
     with:
+      release_env: ${{ inputs.release_env }}
+      target_repo: ${{ needs.initial_setting.outputs.target_repo }}
+      target_branch: ${{ needs.initial_setting.outputs.target_branch }}
       release_version: ${{ inputs.release_version }}
-      release_env: ${{ inputs.release_env }}
-      release_repo: ${{ needs.initial_setting.outputs.dm_be_repo }}
-      dm_sw_ver: ${{ needs.initial_setting.outputs.dm_sw_ver }}
-    secrets: inherit  
-
-  sightmind-backend:
-    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
-    needs: [initial_setting, parallel-create-release]
-    name: SightMind Backend Deploy
-    uses: ./.github/workflows/deploy-sightmind-backend.yaml
-    with:
-      release_env: ${{ inputs.release_env }}
-      backend_repo: ${{ needs.initial_setting.outputs.backend_repo }}
-      target_branch: ${{ needs.initial_setting.outputs.target_branch }}
-      release_version: ${{ needs.initial_setting.outputs.release_version }}
-      target_version: ${{ needs.initial_setting.outputs.target_version }}
-    secrets: inherit  
-
-  sightmind-fronted:
-    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
-    needs: [initial_setting, parallel-create-release]
-    name: SightMind Frontend Deploy
-    uses: ./.github/workflows/deploy-sightmind-frontend.yaml
-    with:
-      release_env: ${{ inputs.release_env }}
-      frontend_repo: ${{ needs.initial_setting.outputs.frontend_repo }}
-      target_branch: ${{ needs.initial_setting.outputs.target_branch }}
-      release_version: ${{ needs.initial_setting.outputs.release_version }}
-      target_version: ${{ needs.initial_setting.outputs.target_version }}
-    secrets: inherit  
-
-  auth-backend:
-    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
-    needs: [initial_setting, parallel-create-release]
-    name: AuthZ Backend Deploy
-    uses: ./.github/workflows/deploy-authZ-backend.yaml
-    with:
-      release_env: ${{ inputs.release_env }}
-      backend_repo: ${{ needs.initial_setting.outputs.auth_repo }}
-      target_branch: ${{ needs.initial_setting.outputs.target_branch }}
-      release_version: ${{ needs.initial_setting.outputs.release_version }}
-      target_version: ${{ needs.initial_setting.outputs.target_version }}
     secrets: inherit  
 
   create-github-release:
     name: Create release
-    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key != 'IS360'}} 
-    needs: [initial_setting , dmpro]
+    if: ${{ github.actor == 'HVC-Automation' && needs.initial_setting.outputs.target_repo == 'platform-job-scheduler' }} 
+    needs: [initial_setting , jobscheduler]
     environment: main
     runs-on: ubuntu-latest
     steps:
@@ -226,7 +72,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          repository: cloud-development-team/${{ needs.initial_setting.outputs.dm_be_repo }}
+          repository: cloud-development-team/${{ needs.initial_setting.outputs.target_repo }}
           ref: refs/heads/main
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
@@ -237,7 +83,7 @@ jobs:
         with:
           tag_name: ${{ inputs.release_version }}
           release_name: ${{ inputs.release_version }}
-          repo: ${{ needs.initial_setting.outputs.dm_be_repo }}
+          repo: ${{ needs.initial_setting.outputs.target_repo }}
           commitish: main
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
@@ -247,4 +93,4 @@ jobs:
       - name: Github Release Result
         run: |
           echo "🔍 Check the release results"
-          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.dm_be_repo }}/releases/tag/${{ inputs.release_version }}"
+          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.target_repo }}/releases/tag/${{ inputs.release_version }}"
