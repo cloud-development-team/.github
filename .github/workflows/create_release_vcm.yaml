@@ -44,7 +44,7 @@ jobs:
           echo "target_repo=$repo" >> $GITHUB_OUTPUT
 
       - name: Fail if environment is unknown
-        if: ${{ steps.set_env.outputs.release_env == null }}
+        if: ${{ inputs.release_version == null }}
         run: |
           echo "Environment is not QA, PROD, or HOTFIX. Failing the workflow."
           exit 1
