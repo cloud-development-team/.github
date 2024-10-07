@@ -73,7 +73,7 @@ jobs:
         with:
           fetch-depth: 0
           repository: cloud-development-team/${{ needs.initial_setting.outputs.target_repo }}
-          ref: refs/heads/main
+          ref: refs/heads/${{ needs.initial_setting.outputs.target_branch }}
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Create Github Release
