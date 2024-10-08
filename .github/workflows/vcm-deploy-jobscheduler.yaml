@@ -134,6 +134,7 @@ jobs:
           if [ "${{ inputs.target_branch }}"  == "production" ]; then
             echo "production upload"
             aws s3 cp s3://vcm021-scheduler-cicd-q-ue1/scheduler/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/scheduler/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
+            aws s3 cp s3://${{ needs.init.outputs.s3_bucket }}/scheduler/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/${{ inputs.release_version }}/deploy.zip
           else
             aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/scheduler/deploy.zip --only-show-errors  --metadata version=${{ inputs.release_version }}
           fi
