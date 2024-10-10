@@ -312,55 +312,13 @@ jobs:
         run: |
           export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
           $(aws sts assume-role \
-          --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution \
-          --role-session-name GitHubPipeline \
-          --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
-          --output text))
-
-          # Check who am I
-          aws sts get-caller-identity
-
-          # Sync S3 Bucket
-          aws s3 sync s3://${{ inputs.prod_fe_bucket }}/${{ inputs.dm_sw_ver }}/out ./out           
-
-          export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
-          $(aws sts assume-role \
           --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution \
           --role-session-name GitHubPipeline \
           --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
           --output text))
 
-          if ${{ inputs.release_env == 'PROD' }} ; then
-            if aws s3 ls s3://${{ inputs.prod_fe_bucket }}/major/pre-out/ ; then
-              echo "S3 path s3://${{ inputs.prod_fe_bucket }}/major/pre-out exist. "
-              # Check who am I
-              aws sts get-caller-identity
+          aws s3 sync s3://${{ inputs.qa_fe_bucket }}/${{ inputs.dm_sw_ver }}/out ./out
+          aws s3 sync ./out s3://${{ inputs.prod_fe_bucket }}/out --delete
 
-              # Sync S3 Bucket
-              aws s3 sync s3://${{ inputs.prod_fe_bucket }}/major/pre-out s3://${{ inputs.prod_fe_bucket }}/major/out --delete
-              aws s3 rm s3://${{ inputs.prod_fe_bucket }}/major/pre-out --recursive
-
-              # Setting CloudFront
-              aws cloudfront create-invalidation --distribution-id "E216BRXBWEUM5Z" --paths "/*"
-            else
-              echo "S3 path s3://${{ inputs.prod_fe_bucket }}/major/pre-out does not exist. Skipping sync and invalidation."
-            fi
-          elif ${{ inputs.release_env == 'PRODMINOR' }} ; then
-            if aws s3 ls s3://${{ inputs.prod_fe_bucket }}/minor/pre-out/ ; then
-              echo "S3 path s3://${{ inputs.prod_fe_bucket }}/minor/pre-out exist. "
-              # Check who am I
-              aws sts get-caller-identity
-
-              # Sync S3 Bucket
-              aws s3 sync s3://${{ inputs.prod_fe_bucket }}/minor/pre-out s3://${{ inputs.prod_fe_bucket }}/minor/out --delete
-              aws s3 rm s3://${{ inputs.prod_fe_bucket }}/minor/pre-out --recursive
-
-              # Setting CloudFront
-              aws cloudfront create-invalidation --distribution-id "E216BRXBWEUM5Z" --paths "/*"
-            else
-              echo "S3 path s3://${{ inputs.prod_fe_bucket }}/minor/pre-out does not exist. Skipping sync and invalidation."
-            fi
-          fi 
-
-
-
+          # Setting CloudFront
+          aws cloudfront create-invalidation --distribution-id ${{ inputs.prod_cf_distribution_id }} --paths "/*"
