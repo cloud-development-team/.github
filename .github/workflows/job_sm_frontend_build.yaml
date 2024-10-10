@@ -93,6 +93,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        if: inputs.target_branch != 'production'
         with:
           repository: cloud-development-team/${{ inputs.frontend_repo }}
           ref: refs/heads/${{ inputs.target_branch}}
