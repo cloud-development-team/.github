@@ -157,6 +157,8 @@ jobs:
           aws-region: ${{ needs.initial-tasks.outputs.region }}
 
       - name: Push build artifact to S3 Bucket and invalidation CloudFront
+        if: inputs.target_branch != 'production'
+        working-directory: ${{ inputs.working_dir }}
         run: |
           # Assume Role using an Automation Key
           identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ needs.initial-tasks.outputs.s3_account }}:role/AWSControlTowerExecution --role-session-name AWS)
@@ -166,20 +168,39 @@ jobs:
 
           
           # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
-          if [ "${{ inputs.target_branch }}" == "production" ]; then
-            if [ "${{ inputs.target_version }}" == "hotfix" ]; then
-              aws s3 sync s3://sm018-hotfix-static-d-an2/hotfix/build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-            elif [ "${{ inputs.version }}" == "major" ]; then
-              aws s3 sync s3://sm018-static-q-ue1/release/build/major s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-            elif [ "${{ inputs.version }}" == "minor" ]; then
-              aws s3 sync s3://sm018-static-q-ue1/release/build/minor s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-            fi
+          if [ "${{ inputs.version }}" == "major" ]; then
+            aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/major --delete --region ${{ needs.initial-tasks.outputs.region }}
+          elif [ "${{ inputs.version }}" == "minor" ]; then
+            aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/minor --delete --region ${{ needs.initial-tasks.outputs.region }}
+          fi
+
+          # Setting CloudFront
+          if [ "${{ inputs.version }}" == "major" ]; then
+            aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id }} --paths "/*"
+          elif [ "${{ inputs.version }}" == "minor" ]; then
+            aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id_minor }} --paths "/*"
           else
-            if [ "${{ inputs.version }}" == "major" ]; then
-              aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/major --delete --region ${{ needs.initial-tasks.outputs.region }}
-            elif [ "${{ inputs.version }}" == "minor" ]; then
-              aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/minor --delete --region ${{ needs.initial-tasks.outputs.region }}
-            fi
+            aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id }} --paths "/*"
+            aws cloudfront create-invalidation --distribution-id ${{ needs.initial-tasks.outputs.cloudfront_distribution_id_minor }} --paths "/*"
+          fi
+
+      - name: Push build artifact to S3 Bucket and invalidation CloudFront
+        if: inputs.target_branch == 'production'
+        run: |
+          # Assume Role using an Automation Key
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ needs.initial-tasks.outputs.s3_account }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+
+          
+          # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
+          if [ "${{ inputs.target_version }}" == "hotfix" ]; then
+            aws s3 sync s3://sm018-hotfix-static-d-an2/hotfix/build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
+          elif [ "${{ inputs.version }}" == "major" ]; then
+            aws s3 sync s3://sm018-static-q-ue1/release/build/major s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
+          elif [ "${{ inputs.version }}" == "minor" ]; then
+            aws s3 sync s3://sm018-static-q-ue1/release/build/minor s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
           fi
 
           # Setting CloudFront
