@@ -86,6 +86,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        if: inputs.target_branch != 'production'
         with:
           repository: cloud-development-team/${{ inputs.backend_repo }}
           ref: refs/heads/${{ inputs.target_branch}}
@@ -115,9 +116,11 @@ jobs:
           npm-cli-login -u hvc_automation -p ${{ env.GH_PAT_AUTOMATION }} -e sdo016-prod@hanwha.com -r https://npm.pkg.github.com
 
       - name: Install specific npm version
+        if: inputs.target_branch != 'production'
         run: npm install -g npm@10.7.0
 
       - name: Verify npm version
+        if: inputs.target_branch != 'production'
         run: npm --version
 
       - name: Install dependencies
