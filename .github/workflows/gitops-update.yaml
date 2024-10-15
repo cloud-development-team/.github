@@ -76,7 +76,7 @@ jobs:
             yq -i '.["FrontendVersion"].["${{ inputs.application_name }}"] = "${{ inputs.image_tag }}"' ./gitops/${{ inputs.json_path }}
 
       - name: DEV Deploy - Update image
-        if: ${{ inputs.json_path == 'dev_version.yaml'}}
+        if: ${{ inputs.json_path == 'dev_version.yaml' && inputs.image_name != 'no_eks' }}
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
@@ -111,6 +111,6 @@ jobs:
           git config user.name "GitHub Actions Bot" && \
           git config user.email "<>" && \
           git add --all
-          git commit -m "chore: update ${{ inputs.image_name }} image tag as ${{ inputs.image_tag }}" && \
+          git commit -m "chore: update ${{ inputs.application_name }} image tag as ${{ inputs.image_tag }}" && \
           git push origin main
         continue-on-error: true
