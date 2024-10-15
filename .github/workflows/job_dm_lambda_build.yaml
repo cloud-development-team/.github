@@ -66,7 +66,7 @@ jobs:
         with:
           repository: cloud-development-team/${{ inputs.repo }} 
           ref: ${{ inputs.branch }}  
-          token: token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
           fetch-depth: 0 
 
       - name: Semantic Version
