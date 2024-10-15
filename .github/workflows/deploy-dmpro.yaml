@@ -51,9 +51,14 @@ on:
         description: "major or minor"
         type: string
         default: "major"
+      dm_lambda_repo:
+        required: false
+        description: "lambda deploy"
+        type: string
+        default: "lambda"
 
 jobs:
-  qa-deploy:
+  qa-deploy: #inside gitops repo
     name: DMPro QA Deploy
     if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QAMINOR' }} 
     environment: main
@@ -87,23 +92,31 @@ jobs:
           cmd: |
             yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
 
-      - name: Install yq
-        run: |
-          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
-          chmod +x /usr/local/bin/yq
+      # - name: Install yq
+      #   run: |
+      #     wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
+      #     chmod +x /usr/local/bin/yq
 
-      - name: Deploy
-        run: |
-          while IFS= read -r line; do
-            if [[ "${line:0:1}" != " " ]]; then
-              service_name=$(echo "$line" | awk -F':' '{print $1}')
-            elif [[ $line == *"image-tag"* ]]; then
-              image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
-              yq -i '
-                .image.tag = "'$image_tag'"
-              ' ./$service_name/env/qa.yaml || true
-            fi
-          done < qa_version.yaml
+      # - name: Deploy
+      #   run: |
+      #     while IFS= read -r line; do
+      #       if [[ "${line:0:1}" != " " ]]; then
+      #         service_name=$(echo "$line" | awk -F':' '{print $1}')
+      #       elif [[ $line == *"image-tag"* ]]; then
+      #         image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
+      #         yq -i '
+      #           .image.tag = "'$image_tag'"
+      #         ' ./$service_name/env/qa.yaml || true
+      #       fi
+      #     done < qa_version.yaml
+
+      - name: Deploy Lambda
+        uses: ./.github/workflows/job_dm_lambda_build.yaml
+        with:
+          branch: release
+          repo: ${{ inputs.dm_lambda_repo }}         
+          working_dir: ./lambda/firmware_upgrade
+          node_versions: "['20.14.0']"
 
       - name: Copy the qa_version.yaml file to prod_version.yaml file.
         run: |
@@ -121,54 +134,54 @@ jobs:
           git push origin main
         continue-on-error: true
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
-          role-session-name: GitHub-Actions-Assume
-          aws-region: us-east-1
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+      #     role-session-name: GitHub-Actions-Assume
+      #     aws-region: us-east-1
+      
+      # # Static file upload
+      # - name: Static File Update - QA
+      #   run: |
+      #     export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+      #     $(aws sts assume-role \
+      #     --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution \
+      #     --role-session-name GitHubPipeline \
+      #     --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+      #     --output text))
 
-      # Static file upload
-      - name: Static File Update - QA
-        run: |
-          export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
-          $(aws sts assume-role \
-          --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution \
-          --role-session-name GitHubPipeline \
-          --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
-          --output text))
+      #     if ${{ inputs.release_env == 'QA' }} ; then
+      #       if aws s3 ls s3://${{ inputs.qa_fe_bucket }}/major/pre-out/ ; then
+      #         echo "S3 path s3://${{ inputs.qa_fe_bucket }}/major/pre-out exist. "
+      #         # Check who am I
+      #         aws sts get-caller-identity
 
-          if ${{ inputs.release_env == 'QA' }} ; then
-            if aws s3 ls s3://${{ inputs.qa_fe_bucket }}/major/pre-out/ ; then
-              echo "S3 path s3://${{ inputs.qa_fe_bucket }}/major/pre-out exist. "
-              # Check who am I
-              aws sts get-caller-identity
+      #         # Sync S3 Bucket
+      #         aws s3 sync s3://${{ inputs.qa_fe_bucket }}/major/pre-out s3://${{ inputs.qa_fe_bucket }}/major/out --delete
+      #         aws s3 rm s3://${{ inputs.qa_fe_bucket }}/major/pre-out --recursive
 
-              # Sync S3 Bucket
-              aws s3 sync s3://${{ inputs.qa_fe_bucket }}/major/pre-out s3://${{ inputs.qa_fe_bucket }}/major/out --delete
-              aws s3 rm s3://${{ inputs.qa_fe_bucket }}/major/pre-out --recursive
+      #         # Setting CloudFront
+      #         aws cloudfront create-invalidation --distribution-id "EOTSDFTM2NPH0" --paths "/*"
+      #       else
+      #         echo "S3 path s3://${{ inputs.qa_fe_bucket }}/major/pre-out does not exist. Skipping sync and invalidation."
+      #       fi
+      #     elif ${{ inputs.release_env == 'QAMINOR' }} ; then
+      #       if aws s3 ls s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/ ; then
+      #         echo "S3 path s3://${{ inputs.qa_fe_bucket }}/minor/pre-out exist. "
+      #         # Check who am I
+      #         aws sts get-caller-identity
 
-              # Setting CloudFront
-              aws cloudfront create-invalidation --distribution-id "EOTSDFTM2NPH0" --paths "/*"
-            else
-              echo "S3 path s3://${{ inputs.qa_fe_bucket }}/major/pre-out does not exist. Skipping sync and invalidation."
-            fi
-          elif ${{ inputs.release_env == 'QAMINOR' }} ; then
-            if aws s3 ls s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/ ; then
-              echo "S3 path s3://${{ inputs.qa_fe_bucket }}/minor/pre-out exist. "
-              # Check who am I
-              aws sts get-caller-identity
+      #         # Sync S3 Bucket
+      #         aws s3 sync s3://${{ inputs.qa_fe_bucket }}/minor/pre-out s3://${{ inputs.qa_fe_bucket }}/minor/out --delete
+      #         aws s3 rm s3://${{ inputs.qa_fe_bucket }}/minor/pre-out --recursive
 
-              # Sync S3 Bucket
-              aws s3 sync s3://${{ inputs.qa_fe_bucket }}/minor/pre-out s3://${{ inputs.qa_fe_bucket }}/minor/out --delete
-              aws s3 rm s3://${{ inputs.qa_fe_bucket }}/minor/pre-out --recursive
-
-              # Setting CloudFront
-              aws cloudfront create-invalidation --distribution-id "E391GJR6NFDKFC" --paths "/*"
-            else
-              echo "S3 path s3://${{ inputs.qa_fe_bucket }}/minor/pre-out does not exist. Skipping sync and invalidation."
-            fi
-          fi 
+      #         # Setting CloudFront
+      #         aws cloudfront create-invalidation --distribution-id "E391GJR6NFDKFC" --paths "/*"
+      #       else
+      #         echo "S3 path s3://${{ inputs.qa_fe_bucket }}/minor/pre-out does not exist. Skipping sync and invalidation."
+      #       fi
+      #     fi 
 
   #1.0.2 SSR 구성
   hotfix-deploy:

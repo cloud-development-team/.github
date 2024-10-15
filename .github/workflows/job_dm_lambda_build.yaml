@@ -1,0 +1,174 @@
+name: DMPro Lambda Deploy
+run-name: DMPro Lambda Deploy - ${{ inputs.branch }}
+
+permissions: write-all
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        description: "Version number from semver"
+        value: ${{ jobs.pnpm-build.outputs.version }}
+    inputs:
+      working_dir:
+        required: false
+        description: "Operating path for path dependent steps"
+        type: string
+        default: .
+      repo:
+        required: false
+        description: "Lambda repository"
+        type: string
+        default: "dmpro-agent-scheduler"
+      branch:
+        description: 'Release Environment'
+        required: true
+        default: ""
+        type: string
+      node_versions:
+        description: 'node versions'
+        required: true
+        default: "['20.14.0']"
+        type: string
+
+env:
+  CODEFREEZE: ${{ secrets.CODEFREEZE }}
+  GH_PAT_AUTOMATION: ${{ secrets.GH_PAT_AUTOMATION_SEMANTIC_RELEASE }} #${{ secrets.GH_PAT_AUTOMATION }}
+
+jobs:
+  init: 
+    runs-on: ubuntu-latest
+    environment: dm_${{ github.ref_name }}
+    
+    outputs:
+      region: ${{ steps.set_env.outputs.region }}
+      account: ${{ steps.set_env.outputs.account }}
+      function_name: ${{ steps.set_env.outputs.function_name }}
+      json_path: ${{ steps.set_env.outputs.json_path }}
+
+    steps:
+      - name: set env
+        id: set_env
+        run: |
+          echo "region=${{ vars.REGION }}" >> $GITHUB_OUTPUT
+          echo "account=${{ vars.ACCOUNT }}" >> $GITHUB_OUTPUT
+          echo "function_name=${{ vars.FUNCTION }}" >> $GITHUB_OUTPUT
+          echo "json_path=${{ vars.JSONPATH }}" >> $GITHUB_OUTPUT
+
+  versioning: 
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    name: Versioning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout other repository
+        uses: actions/checkout@v3
+        with:
+          repository: cloud-development-team/${{ inputs.repo }} 
+          ref: ${{ inputs.branch }}  
+          token: token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+          fetch-depth: 0 
+
+      - name: Semantic Version
+        id: version
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          major_pattern: "(MAJOR)"
+          minor_pattern: "(MINOR)"
+          version_format: ${{ github.ref_name == 'release' && 'v${major}.${minor}.${patch}' || 'dev${major}.${minor}.${patch}' }}
+          change_path: "."
+          bump_each_commit: true
+          search_commit_body: true
+
+  pnpm-build:
+    name: Run Node Build
+    runs-on: ubuntu-latest
+    environment: aws
+    needs: [init, versioning]
+    strategy:
+      matrix:
+        node-version: ${{ fromJSON(inputs.node_versions) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: inputs.target_branch != 'production'
+        with:
+          repository: cloud-development-team/${{ inputs.repo }}
+          ref: refs/heads/${{ inputs.branch}}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Setup Node.js
+        if: inputs.target_branch != 'production'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Login to NPM
+        if: inputs.target_branch != 'production'
+        working-directory: ${{ inputs.working_dir }}
+        run: |        
+          npm install -g npm-cli-login 
+          npm-cli-login -u hvc_automation -p ${{ env.GH_PAT_AUTOMATION }} -e sdo016-prod@hanwha.com -r https://npm.pkg.github.com
+
+      - name: Install dependencies
+        if: inputs.target_branch != 'production' && steps.npm-cache.outputs.cache-hit != 'true'
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          npm install
+
+      - name: Build
+        if: inputs.target_branch != 'production'
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          npm run build
+          echo "================"
+          ls -al src
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GH_OIDC_ROLE }}
+          role-session-name: GitHub-Actions-Assume
+          aws-region: ${{ needs.init.outputs.region }}
+
+      - name: Zip build output
+        if: github.ref_name != 'production'
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          zip -qry function.zip ./dist
+
+      - name: Lambda Code Update
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          # Assume Role using an Automation Key
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ needs.init.outputs.account }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+
+          aws lambda update-function-code --function-name ${{ needs.init.outputs.function_name }} --zip-file fileb://function.zip
+          while true; do
+            STATUS=$(aws lambda get-function --function-name ${{ needs.init.outputs.function_name }} --query 'Configuration.[LastUpdateStatus]' --output text)
+            echo "Current STATUS: $STATUS"
+            if [ "$STATUS" == "Successful" ]; then
+              echo "Lambda update completed. Proceeding with version publishing."
+              break
+            else
+              echo "Update in progress. Waiting..."
+              sleep 3
+            fi
+          done
+          aws lambda publish-version --function-name ${{ needs.init.outputs.function_name }} --description "${{ steps.version.outputs.version }}"
+
+  gitops-update-call:
+    needs: [versioning, build-and-deploy]
+    uses: cloud-development-team/.github/.github/workflows/gitops-update.yaml@main
+    with:
+      repository_name: "cloud-development-team/dmpro-gitops"
+      image_name: "no_eks"
+      image_tag: ${{ needs.versioning.outputs.version }}
+      yaml_path: "no_eks"
+      json_path: ${{ needs.init.outputs.json_path }}
+      application_name: "dmpro-agent-scheduler"
+    secrets: inherit

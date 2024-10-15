@@ -26,7 +26,7 @@ jobs:
     if: github.actor == 'jenkins-se'
     outputs:
       dm_be_repo: ${{ steps.set_env.outputs.dm_be_repo }}
-      dm_fe_repo: ${{ steps.set_env.outputs.dm_fe_repo }}
+      dm_lambda_repo: ${{ steps.set_env.outputs.dm_lambda_repo }}
       dm_sw_ver: ${{ steps.set_env.outputs.dm_sw_ver }}
       dm_fe_branch: ${{ steps.set_env.outputs.dm_fe_branch }}
       backend_repo: ${{ steps.set_env.outputs.backend_repo }}
@@ -50,7 +50,7 @@ jobs:
         run: |
           if [ "${{ inputs.jira_key }}" == "CPD" ] || [ "${{ inputs.jira_key }}" == "KDOG" ]; then
             dm_be_repo=dmpro-gitops
-            dm_fe_repo=hc-frontend-mono
+            dm_lambda_repo=dmpro-agent-scheduler
             if [ "${{ inputs.release_env }}" == "QA" ]; then
                 dm_fe_branch="qa"
                 dm_sw_ver="major"
@@ -70,7 +70,7 @@ jobs:
 
             echo "set env dmpro"
             echo "dm_be_repo=$dm_be_repo" >> $GITHUB_OUTPUT
-            echo "dm_fe_repo=$dm_fe_repo" >> $GITHUB_OUTPUT
+            echo "dm_lambda_repo=$dm_lambda_repo" >> $GITHUB_OUTPUT
             echo "dm_sw_ver=$dm_sw_ver" >> $GITHUB_OUTPUT
             echo "dm_fe_branch=$dm_fe_branch" >> $GITHUB_OUTPUT
 
@@ -173,6 +173,7 @@ jobs:
       release_version: ${{ inputs.release_version }}
       release_env: ${{ inputs.release_env }}
       release_repo: ${{ needs.initial_setting.outputs.dm_be_repo }}
+      dm_lambda_repo: ${{ needs.initial_setting.outputs.dm_lambda_repo }}
       dm_sw_ver: ${{ needs.initial_setting.outputs.dm_sw_ver }}
     secrets: inherit  
 
