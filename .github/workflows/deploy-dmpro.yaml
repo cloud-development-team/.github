@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy Lambda
-        uses: ./.github/workflows/job_dm_lambda_build.yaml
+        uses: ./workflows/job_dm_lambda_build.yaml
         with:
           branch: release
           repo: ${{ inputs.dm_lambda_repo }}         
