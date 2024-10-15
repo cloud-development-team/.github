@@ -48,7 +48,7 @@ jobs:
       - name: Repository List
         id: set_env
         run: |
-          if [ "${{ inputs.jira_key }}" == "CPD" ] || [ "${{ inputs.jira_key }}" == "KDOG" ]; then
+          if [ "${{ inputs.jira_key }}" == "CPD" ] || [ "${{ inputs.jira_key }}" == "OPS" ]; then
             dm_be_repo=dmpro-gitops
             dm_lambda_repo=dmpro-agent-scheduler
             if [ "${{ inputs.release_env }}" == "QA" ]; then
