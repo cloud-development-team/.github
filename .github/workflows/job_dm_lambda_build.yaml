@@ -38,7 +38,7 @@ env:
 jobs:
   init: 
     runs-on: ubuntu-latest
-    environment: dm_${{ github.ref_name }}
+    environment: dm_${{ inputs.branch }}
     
     outputs:
       region: ${{ steps.set_env.outputs.region }}

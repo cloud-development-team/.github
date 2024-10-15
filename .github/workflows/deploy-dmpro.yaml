@@ -72,25 +72,25 @@ jobs:
           ref: refs/heads/main
           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
           
-      - name: Update version.json information
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
-            yq -i '.["JiraReleaseVersion"].["SWVersionn"] = "${{ inputs.dm_sw_ver }}"' qa_version.json     
+      # - name: Update version.json information
+      #   uses: mikefarah/yq@v4.34.2
+      #   with:
+      #     cmd: |
+      #       yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
+      #       yq -i '.["JiraReleaseVersion"].["SWVersionn"] = "${{ inputs.dm_sw_ver }}"' qa_version.json     
 
-      - name: Get Time
-        id: time
-        uses: nanzm/get-time-action@master
-        with:
-          timeZone: UTC-9
-          format: 'YYYY-MM-DD HH:mm:ss'
+      # - name: Get Time
+      #   id: time
+      #   uses: nanzm/get-time-action@master
+      #   with:
+      #     timeZone: UTC-9
+      #     format: 'YYYY-MM-DD HH:mm:ss'
 
-      - name: Update Release date to version.json information
-        uses: mikefarah/yq@v4.34.2
-        with:
-          cmd: |
-            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
+      # - name: Update Release date to version.json information
+      #   uses: mikefarah/yq@v4.34.2
+      #   with:
+      #     cmd: |
+      #       yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
 
       # - name: Install yq
       #   run: |
