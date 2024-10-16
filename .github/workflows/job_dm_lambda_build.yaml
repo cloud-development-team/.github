@@ -100,7 +100,7 @@ jobs:
         if: inputs.target_branch != 'production'
         with:
           repository: cloud-development-team/${{ inputs.repo }}
-          ref: refs/heads/${{ inputs.branch}}
+          ref: refs/heads/release #release브랜치만 있음
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Setup Node.js
