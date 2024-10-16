@@ -152,6 +152,8 @@ jobs:
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
           if ${{ inputs.branch == 'release' }}; then
+            pwd
+            ls
             cd ./lambda/firmware_upgrade
             aws s3 cp function.zip s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip --metadata version=${{ needs.versioning.outputs.version }}
             VERSION=${{ needs.versioning.outputs.version }}
