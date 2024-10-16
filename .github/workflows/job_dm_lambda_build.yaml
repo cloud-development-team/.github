@@ -159,6 +159,7 @@ jobs:
             aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip ./function.zip
             VERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key lambda-build/function.zip --query 'Metadata.version' --output text)
             echo "Version: $VERSION"
+            aws s3 rm s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip
           fi
 
           aws lambda update-function-code --function-name ${{ needs.init.outputs.function_name }} --zip-file fileb://function.zip > /dev/null
