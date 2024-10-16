@@ -60,7 +60,7 @@ jobs:
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: QA/Prod Update BE version.json(main)
-        if: ${{ inputs.application_name != 'dmpro-frontend-mono' && inputs.json_path != 'dev_version.yaml'}}
+        if: ${{ inputs.application_name != 'dmpro-frontend-mono' && inputs.json_path != 'dev_version.yaml' && inputs.image_name != '' }}
         uses: mikefarah/yq@v4.34.2
         with:
           cmd: |
