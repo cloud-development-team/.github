@@ -162,7 +162,7 @@ jobs:
           aws lambda publish-version --function-name ${{ needs.init.outputs.function_name }} --description "${{ needs.versioning.outputs.version }}"
 
   gitops-update-call:
-    needs: [versioning, npm-build]
+    needs: [init, versioning, npm-build]
     uses: cloud-development-team/.github/.github/workflows/gitops-update.yaml@main
     with:
       repository_name: "cloud-development-team/dmpro-gitops"
