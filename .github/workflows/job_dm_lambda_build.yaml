@@ -97,33 +97,33 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        ${{ inputs.branch == 'release' }}
+        if: ${{ inputs.branch == 'release' }}
         with:
           repository: cloud-development-team/${{ inputs.repo }}
           ref: refs/heads/release #release브랜치만 있음
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Setup Node.js
-        ${{ inputs.branch == 'release' }}
+        if: ${{ inputs.branch == 'release' }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
 
       - name: Login to NPM
-        ${{ inputs.branch == 'release' }}
+        if: ${{ inputs.branch == 'release' }}
         working-directory: ${{ inputs.working_dir }}
         run: |        
           npm install -g npm-cli-login 
           npm-cli-login -u hvc_automation -p ${{ env.GH_PAT_AUTOMATION }} -e sdo016-prod@hanwha.com -r https://npm.pkg.github.com
 
       - name: Install dependencies
-        ${{ inputs.branch == 'release' && steps.npm-cache.outputs.cache-hit != 'true' }}
+        if: ${{ inputs.branch == 'release' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           npm install
 
       - name: Build
-        ${{ inputs.branch == 'release' }}
+        if: ${{ inputs.branch == 'release' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           npm run build
@@ -138,7 +138,7 @@ jobs:
           aws-region: ${{ needs.init.outputs.region }}
 
       - name: Zip build output
-        ${{ inputs.branch == 'release' }}
+        if: ${{ inputs.branch == 'release' }}
         working-directory: ${{ inputs.working_dir }}
         run: |
           zip -qry function.zip ./dist
