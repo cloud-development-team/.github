@@ -57,7 +57,7 @@ jobs:
 
   versioning: 
     outputs:
-      version: ${{ steps.versioning.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
     name: Versioning
     runs-on: ubuntu-latest
     steps:
@@ -159,7 +159,7 @@ jobs:
               sleep 3
             fi
           done
-          aws lambda publish-version --function-name ${{ needs.init.outputs.function_name }} --description "${{ steps.versioning.outputs.version }}"
+          aws lambda publish-version --function-name ${{ needs.init.outputs.function_name }} --description "${{ needs.versioning.outputs.version }}"
 
   gitops-update-call:
     needs: [versioning, npm-build]
