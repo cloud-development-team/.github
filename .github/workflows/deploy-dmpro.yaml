@@ -60,8 +60,7 @@ on:
 jobs:
   qa-deploy-lambda:
     name: DMPro QA Lambda Deploy
-    if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QAMINOR' }} 
-    environment: main
+    if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QAMINOR' }}
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     with:
       branch: release
