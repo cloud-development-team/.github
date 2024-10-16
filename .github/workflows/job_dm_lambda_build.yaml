@@ -179,8 +179,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
+          repository: cloud-development-team/${{ inputs.repo }}
+          ref: ${{ inputs.branch }}
           fetch-depth: 0
 
       - name: Build Release Changelog
