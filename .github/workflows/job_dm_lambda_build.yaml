@@ -151,7 +151,6 @@ jobs:
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
-
           if ${{ inputs.branch == 'release' }}; then
             aws s3 cp function.zip s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip --metadata version=${{ needs.versioning.outputs.version }}
             VERSION = ${{ needs.versioning.outputs.version }}
@@ -173,8 +172,6 @@ jobs:
               fi
             done
           aws lambda publish-version --function-name ${{ needs.init.outputs.function_name }} --description "$VERSION" > /dev/null
-
-
 
   gitops-update-call:
     needs: [init, versioning, npm-build]
