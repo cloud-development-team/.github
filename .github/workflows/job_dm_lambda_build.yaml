@@ -154,7 +154,7 @@ jobs:
           if ${{ inputs.branch == 'release' }}; then
             aws s3 cp function.zip s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip --metadata version=${{ needs.versioning.outputs.version }}
             VERSION = ${{ needs.versioning.outputs.version }}
-          elif ${{ input.branch == 'production' }}; then
+          elif ${{ inputs.branch == 'production' }}; then
             aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip ./function.zip
             VERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key $FILE --query 'Metadata.version' --output text)
             echo "Version: $VERSION"
