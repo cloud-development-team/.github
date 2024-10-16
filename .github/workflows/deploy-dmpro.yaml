@@ -61,6 +61,7 @@ jobs:
   qa-deploy-lambda:
     name: DMPro QA Lambda Deploy
     if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QAMINOR' }} 
+    environment: main
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     with:
       branch: release
