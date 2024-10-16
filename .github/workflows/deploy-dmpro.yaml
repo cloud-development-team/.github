@@ -64,13 +64,11 @@ jobs:
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     environment: main
     runs-on: ubuntu-latest
-    steps:
-      - name: Deploy Lambda
-        with:
-          branch: release
-          repo: ${{ inputs.dm_lambda_repo }}         
-          working_dir: ./lambda/firmware_upgrade
-          node_versions: "['20.14.0']"
+    with:
+      branch: release
+      repo: ${{ inputs.dm_lambda_repo }}         
+      working_dir: ./lambda/firmware_upgrade
+      node_versions: "['20.14.0']"
 
   qa-deploy: #inside gitops repo
     name: DMPro QA Deploy
