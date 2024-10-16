@@ -182,6 +182,7 @@ jobs:
         with:
           repository: cloud-development-team/${{ inputs.repo }}
           ref: refs/heads/${{ inputs.branch }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
           fetch-depth: 0
 
       - name: Build Release Changelog
