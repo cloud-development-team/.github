@@ -35,7 +35,7 @@ on:
         type: string
         default: "null"
     secrets:
-      GH_MANAGEPACKAGETOKEN:
+      AUTOMATION_GH_MANAGEPACKAGE_TOKEN:
         required: false
         description: "If not provided, the repo creds will be used."
 
@@ -57,7 +57,7 @@ jobs:
           repository: ${{ inputs.repository_name }}
           path: ./gitops
           ref: ${{ inputs.repository_ref }}
-          token: ${{ secrets.GH_MANAGEPACKAGETOKEN }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: QA/Prod Update BE version.json(main)
         if: ${{ inputs.application_name != 'dmpro-frontend-mono' && inputs.json_path != 'dev_version.yaml'}}

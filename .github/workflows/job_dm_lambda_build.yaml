@@ -57,7 +57,7 @@ jobs:
 
   versioning: 
     outputs:
-      version: ${{ steps.version.outputs.version }}
+      version: ${{ steps.versioning.outputs.version }}
     name: Versioning
     runs-on: ubuntu-latest
     steps:
