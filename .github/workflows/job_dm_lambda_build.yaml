@@ -144,7 +144,6 @@ jobs:
           zip -qry function.zip ./dist
 
       - name: Lambda Code Update
-        working-directory: ${{ inputs.working_dir }}
         run: |
           # Assume Role using an Automation Key
           identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ needs.init.outputs.account }}:role/AWSControlTowerExecution --role-session-name AWS)
@@ -153,6 +152,7 @@ jobs:
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
           if ${{ inputs.branch == 'release' }}; then
+            cd ./lambda/firmware_upgrade
             aws s3 cp function.zip s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip --metadata version=${{ needs.versioning.outputs.version }}
             VERSION=${{ needs.versioning.outputs.version }}
           elif ${{ inputs.branch == 'production' }}; then
