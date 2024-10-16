@@ -217,7 +217,7 @@ jobs:
     secrets: inherit  
 
   create-github-release:
-    name: Create release
+    name: Create GitOps Github Release
     if: ${{ github.actor == 'jenkins-se' && inputs.jira_key != 'IS360'}} 
     needs: [initial_setting , dmpro]
     environment: main
