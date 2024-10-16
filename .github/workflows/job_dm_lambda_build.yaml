@@ -37,6 +37,7 @@ env:
 
 jobs:
   init: 
+    name: Lambda Deploy Init
     runs-on: ubuntu-latest
     environment: dm_${{ inputs.branch }}
     
@@ -45,6 +46,7 @@ jobs:
       account: ${{ steps.set_env.outputs.account }}
       function_name: ${{ steps.set_env.outputs.function_name }}
       json_path: ${{ steps.set_env.outputs.json_path }}
+      bucket: ${{ steps.set_env.outputs.bucket }}
 
     steps:
       - name: set env
@@ -54,8 +56,11 @@ jobs:
           echo "account=${{ vars.ACCOUNT }}" >> $GITHUB_OUTPUT
           echo "function_name=${{ vars.FUNCTION }}" >> $GITHUB_OUTPUT
           echo "json_path=${{ vars.JSONPATH }}" >> $GITHUB_OUTPUT
+          echo "bucket=${{ vars.BUCKET }}" >> $GITHUB_OUTPUT
 
   versioning: 
+    name: Lambda Versioning
+    if: ${{ inputs.branch == 'release' }}
     outputs:
       version: ${{ steps.version.outputs.version }}
     name: Versioning
@@ -147,18 +152,30 @@ jobs:
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
+
+          if ${{ inputs.branch == 'release' }}; then
+            aws s3 cp function.zip s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip --metadata version=${{ needs.versioning.outputs.version }}
+            VERSION = ${{ needs.versioning.outputs.version }}
+          elif ${{ input.branch == 'production' }}; then
+            aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip ./function.zip
+            VERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key $FILE --query 'Metadata.version' --output text)
+            echo "Version: $VERSION"
+          fi
+
           aws lambda update-function-code --function-name ${{ needs.init.outputs.function_name }} --zip-file fileb://function.zip > /dev/null
-          while true; do
-            STATUS=$(aws lambda get-function --function-name ${{ needs.init.outputs.function_name }} --query 'Configuration.[LastUpdateStatus]' --output text)
-            if [ "$STATUS" == "Successful" ]; then
-              echo "Lambda update completed. Proceeding with version publishing."
-              break
-            else
-              echo "Update in progress. Waiting..."
-              sleep 3
-            fi
-          done
-          aws lambda publish-version --function-name ${{ needs.init.outputs.function_name }} --description "${{ needs.versioning.outputs.version }}" > /dev/null
+            while true; do
+              STATUS=$(aws lambda get-function --function-name ${{ needs.init.outputs.function_name }} --query 'Configuration.[LastUpdateStatus]' --output text)
+              if [ "$STATUS" == "Successful" ]; then
+                echo "Lambda update completed. Proceeding with version publishing."
+                break
+              else
+                echo "Update in progress. Waiting..."
+                sleep 3
+              fi
+            done
+          aws lambda publish-version --function-name ${{ needs.init.outputs.function_name }} --description "$VERSION" > /dev/null
+
+
 
   gitops-update-call:
     needs: [init, versioning, npm-build]
