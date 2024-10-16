@@ -58,20 +58,25 @@ on:
         default: "lambda"
 
 jobs:
-  qa-deploy: #inside gitops repo
-    name: DMPro QA Deploy
+  qa-deploy-lambda:
+    name: DMPro QA Lambda Deploy
     if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QAMINOR' }} 
+    uses: ./.github/workflows/job_dm_lambda_build.yaml
     environment: main
     runs-on: ubuntu-latest
-    steps:
       - name: Deploy Lambda
-        uses: ./.github/workflows/job_dm_lambda_build.yaml
         with:
           branch: release
           repo: ${{ inputs.dm_lambda_repo }}         
           working_dir: ./lambda/firmware_upgrade
           node_versions: "['20.14.0']"
 
+  qa-deploy: #inside gitops repo
+    name: DMPro QA Deploy
+    if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QAMINOR' }} 
+    environment: main
+    runs-on: ubuntu-latest
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
