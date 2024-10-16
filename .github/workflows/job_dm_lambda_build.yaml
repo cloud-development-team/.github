@@ -191,7 +191,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
         with:
           tag_name: ${{ needs.versioning.outputs.version }}
-          repo: ${{ inputs.branch }}
+          repo: ${{ inputs.repo }}
           release_name: ${{ needs.versioning.outputs.version }}
           body: ${{ steps.release_changelog.outputs.changelog }}
           commitish: ${{ inputs.branch }}
