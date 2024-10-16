@@ -63,7 +63,6 @@ jobs:
     if: ${{ inputs.branch == 'release' }}
     outputs:
       version: ${{ steps.version.outputs.version }}
-    name: Versioning
     runs-on: ubuntu-latest
     steps:
       - name: Checkout other repository
