@@ -80,7 +80,7 @@ jobs:
           bump_each_commit: true
           search_commit_body: true
 
-  pnpm-build:
+  npm-build:
     name: Run Node Build
     runs-on: ubuntu-latest
     environment: aws
@@ -162,7 +162,7 @@ jobs:
           aws lambda publish-version --function-name ${{ needs.init.outputs.function_name }} --description "${{ steps.version.outputs.version }}"
 
   gitops-update-call:
-    needs: [versioning, build-and-deploy]
+    needs: [versioning, npm-build]
     uses: cloud-development-team/.github/.github/workflows/gitops-update.yaml@main
     with:
       repository_name: "cloud-development-team/dmpro-gitops"
