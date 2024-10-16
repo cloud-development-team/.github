@@ -1,4 +1,4 @@
-# https://docs.github.com/en/actions/using-workflows/reusing-workflows#example-reusable-workflow
+#MSA Gitops Update & Lambda Release Update
 name: GitOps Update container image
 
 on:
