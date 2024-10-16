@@ -35,8 +35,6 @@ on:
         type: string
         default: "null"
     secrets:
-      GH_USERNAME:
-        required: true
       GH_MANAGEPACKAGETOKEN:
         required: false
         description: "If not provided, the repo creds will be used."

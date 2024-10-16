@@ -159,7 +159,7 @@ jobs:
               sleep 3
             fi
           done
-          aws lambda publish-version --function-name ${{ needs.init.outputs.function_name }} --description "${{ steps.version.outputs.version }}"
+          aws lambda publish-version --function-name ${{ needs.init.outputs.function_name }} --description "${{ steps.versioning.outputs.version }}"
 
   gitops-update-call:
     needs: [versioning, npm-build]
