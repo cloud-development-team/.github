@@ -67,6 +67,7 @@ jobs:
       repo: ${{ inputs.dm_lambda_repo }}         
       working_dir: ./lambda/firmware_upgrade
       node_versions: "['20.14.0']"
+      token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
 
   qa-deploy: #inside gitops repo
     name: DMPro QA Deploy
