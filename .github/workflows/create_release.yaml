@@ -28,7 +28,6 @@ jobs:
       dm_be_repo: ${{ steps.set_env.outputs.dm_be_repo }}
       dm_lambda_repo: ${{ steps.set_env.outputs.dm_lambda_repo }}
       dm_sw_ver: ${{ steps.set_env.outputs.dm_sw_ver }}
-      dm_fe_branch: ${{ steps.set_env.outputs.dm_fe_branch }}
       backend_repo: ${{ steps.set_env.outputs.backend_repo }}
       frontend_repo: ${{ steps.set_env.outputs.frontend_repo }}
       auth_repo: ${{ steps.set_env.outputs.auth_repo }}
@@ -51,28 +50,17 @@ jobs:
           if [ "${{ inputs.jira_key }}" == "CPD" ] || [ "${{ inputs.jira_key }}" == "OPS" ]; then
             dm_be_repo=dmpro-gitops
             dm_lambda_repo=dmpro-agent-scheduler
-            if [ "${{ inputs.release_env }}" == "QA" ]; then
-                dm_fe_branch="qa"
-                dm_sw_ver="major"
-            elif [ "${{ inputs.release_env }}" == "QAMINOR" ]; then
-                dm_fe_branch="qa"
+            
+            if grep -q "MINOR" <<< "${{ inputs.release_env }}"; then
                 dm_sw_ver="minor"
-            elif [ "${{ inputs.release_env }}" == "HOTFIX" ]; then
-                dm_fe_branch="hotfix"
+            else
                 dm_sw_ver="major"
-            elif [ "${{ inputs.release_env }}" == "PROD" ]; then
-                dm_fe_branch="none"
-                dm_sw_ver="major"
-            elif [ "${{ inputs.release_env }}" == "PRODMINOR" ]; then
-                dm_fe_branch="none"
-                dm_sw_ver="minor"
             fi
 
             echo "set env dmpro"
             echo "dm_be_repo=$dm_be_repo" >> $GITHUB_OUTPUT
             echo "dm_lambda_repo=$dm_lambda_repo" >> $GITHUB_OUTPUT
             echo "dm_sw_ver=$dm_sw_ver" >> $GITHUB_OUTPUT
-            echo "dm_fe_branch=$dm_fe_branch" >> $GITHUB_OUTPUT
 
           elif [ "${{ inputs.jira_key }}" == "IS360" ]; then
             echo "set env sightmind"
