@@ -72,7 +72,7 @@ jobs:
   qa-deploy: #inside gitops repo
     name: DMPro QA Deploy
     if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QAMINOR' }} 
-    needs: qa-deploy-lambda
+    #needs: qa-deploy-lambda
     environment: main
     runs-on: ubuntu-latest
     steps:
