@@ -177,7 +177,11 @@ jobs:
               aws s3 cp s3://sm018-cicd-q-ue1/backend/minor/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
             fi
           else
+            if [ "${{ inputs.version }}" == "major" ]; then
               aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/major/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
+            elif [ "${{ inputs.version }}" == "minor" ]; then
+              aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/minor/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
+            fi
           fi
           
           aws sts get-caller-identity
