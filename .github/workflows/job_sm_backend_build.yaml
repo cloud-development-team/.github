@@ -64,6 +64,7 @@ jobs:
       region: ${{ steps.set_env.outputs.region }}
       s3_bucket: ${{ steps.set_env.outputs.s3_bucket }}
       s3_account: ${{ steps.set_env.outputs.s3_account }}
+      env_bucket: ${{ steps.set_env.outputs.env_bucket }}
 
     steps:
       - name: set env
@@ -72,6 +73,7 @@ jobs:
           echo "region=${{ vars.REGION }}" >> $GITHUB_OUTPUT
           echo "s3_bucket=${{ vars.S3_BUCKET }}" >> $GITHUB_OUTPUT
           echo "s3_account=${{ vars.S3_ACCOUNT }}" >> $GITHUB_OUTPUT
+          echo "env_bucket=${{ vars.ENV_BUCKET }}" >> $GITHUB_OUTPUT
 
   pnpm-build:
     name: Run Node Build
@@ -128,6 +130,18 @@ jobs:
         working-directory: ${{ inputs.working_dir }}
         run: |
           npm install
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GH_OIDC_ROLE }}
+          role-session-name: GitHub-Actions-Assume
+          aws-region: ${{ needs.init.outputs.region }}
+
+      - name: Get environment variables from s3
+        run: |
+          env_script="aws s3 sync s3://${{ needs.init.outputs.env_bucket }} /home/ubuntu/.sightmind/"
+          sed -i "/^aws s3 sync/ s|.*|${env_script}|" ./codedeploy/deploy.sh
 
       - name: Build
         if: inputs.target_branch != 'production'
@@ -136,13 +150,6 @@ jobs:
           npm run build
           echo "================"
           ls -al apps/*/src
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.GH_OIDC_ROLE }}
-          role-session-name: GitHub-Actions-Assume
-          aws-region: ${{ needs.init.outputs.region }}
 
       - name: Zip build output
         if: inputs.target_branch != 'production'
