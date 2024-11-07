@@ -140,7 +140,7 @@ jobs:
 
       - name: Get environment variables from s3
         run: |
-          env_script="aws s3 sync s3://${{ needs.init.outputs.env_bucket }} /home/ubuntu/.sightmind/"
+          env_script="aws s3 sync s3://${{ needs.init.outputs.env_bucket }}/${{ inputs.release_version }}/ /home/ubuntu/.sightmind/"
           sed -i "/^aws s3 sync/ s|.*|${env_script}|" ./codedeploy/deploy.sh
 
       - name: Build
