@@ -146,7 +146,7 @@ jobs:
           latest_prefix="latest/"
 
           # Check if the release version directory exists in the bucket
-          if aws s3 ls "s3://${bucket}/${release_prefix}" --recursive | grep -q '^'; then
+          if aws s3 ls "s3://${bucket}/${release_prefix}" --recursive | grep -q '^[ ]*'; then
               echo "Release version directory exists. Syncing from ${release_prefix}"
               env_script="aws s3 sync s3://${bucket}/${release_prefix} /home/ubuntu/.sightmind/"
           else
