@@ -141,10 +141,9 @@ jobs:
       - name: Get environment variables from s3
         run: |
           # Define the bucket and prefixes
-          bucket="${{ needs.init.outputs.env_bucket }}"
-          latest_prefix="latest/"
+          bucket="${{ needs.init.outputs.env_bucket }}"          
 
-          env_script="aws s3 sync s3://${bucket}/${latest_prefix}/ /home/ubuntu/.sightmind/"
+          env_script="aws s3 sync s3://${bucket}/latest/ /home/ubuntu/.sightmind/"
 
           sed -i "/^aws s3 sync/ s|.*|${env_script}|" ./codedeploy/deploy.sh
 

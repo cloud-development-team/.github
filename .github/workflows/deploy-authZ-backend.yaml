@@ -137,9 +137,8 @@ jobs:
         run: |
           # Define the bucket and prefixes
           bucket="${{ needs.init.outputs.env_bucket }}"
-          latest_prefix="latest/"
 
-          env_script="aws s3 sync s3://${bucket}/${latest_prefix}/ /home/ubuntu/.visioncommon/"
+          env_script="aws s3 sync s3://${bucket}/latest/ /home/ubuntu/.visioncommon/"
 
           sed -i "/^aws s3 sync/ s|.*|${env_script}|" ./codedeploy/deploy.sh
 
