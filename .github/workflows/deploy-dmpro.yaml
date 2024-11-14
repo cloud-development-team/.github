@@ -58,21 +58,21 @@ on:
         default: "lambda"
 
 jobs:
-  # qa-deploy-lambda:
-  #   name: DMPro QA Lambda Deploy
-  #   if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QAMINOR' }}
-  #   uses: ./.github/workflows/job_dm_lambda_build.yaml
-  #   with:
-  #     branch: release
-  #     repo: ${{ inputs.dm_lambda_repo }}         
-  #     working_dir: ./lambda/firmware_upgrade
-  #     node_versions: "['20.14.0']"
-  #   secrets: inherit
+  qa-deploy-lambda:
+    name: DMPro QA Lambda Deploy
+    if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH' }}
+    uses: ./.github/workflows/job_dm_lambda_build.yaml
+    with:
+      branch: release
+      repo: ${{ inputs.dm_lambda_repo }}         
+      working_dir: ./lambda/firmware_upgrade
+      node_versions: "['20.14.0']"
+    secrets: inherit
 
   qa-deploy: #inside gitops repo
     name: DMPro QA Deploy
-    if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QAMINOR' }} 
-    #needs: qa-deploy-lambda
+    if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH'}} 
+    needs: qa-deploy-lambda
     environment: main
     runs-on: ubuntu-latest
     steps:
@@ -155,37 +155,31 @@ jobs:
           --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
           --output text))
 
-          if ${{ inputs.release_env == 'QA' }} ; then
-            if aws s3 ls s3://${{ inputs.qa_fe_bucket }}/major/pre-out/ ; then
-              echo "S3 path s3://${{ inputs.qa_fe_bucket }}/major/pre-out exist. "
-              # Check who am I
-              aws sts get-caller-identity
+          sync_and_invalidate() {
+            local build_path=$1
+            local target_path=$2
+            local distribution_id=$3
 
+            if aws s3 ls "$build_path" ; then
               # Sync S3 Bucket
-              aws s3 sync s3://${{ inputs.qa_fe_bucket }}/major/pre-out s3://${{ inputs.qa_fe_bucket }}/major/out --delete
-              aws s3 rm s3://${{ inputs.qa_fe_bucket }}/major/pre-out --recursive
+              aws s3 sync "$build_path" "$target_path" --delete
+              aws s3 rm "$build_path" --recursive
 
               # Setting CloudFront
-              aws cloudfront create-invalidation --distribution-id "EOTSDFTM2NPH0" --paths "/*"
+              aws cloudfront create-invalidation --distribution-id "$distribution_id" --paths "/*"
             else
-              echo "S3 path s3://${{ inputs.qa_fe_bucket }}/major/pre-out does not exist. Skipping sync and invalidation."
+              echo "S3 path $build_path does not exist. Skipping sync and invalidation."
             fi
-          elif ${{ inputs.release_env == 'QAMINOR' }} ; then
-            if aws s3 ls s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/ ; then
-              echo "S3 path s3://${{ inputs.qa_fe_bucket }}/minor/pre-out exist. "
-              # Check who am I
-              aws sts get-caller-identity
+          }
 
-              # Sync S3 Bucket
-              aws s3 sync s3://${{ inputs.qa_fe_bucket }}/minor/pre-out s3://${{ inputs.qa_fe_bucket }}/minor/out --delete
-              aws s3 rm s3://${{ inputs.qa_fe_bucket }}/minor/pre-out --recursive
-
-              # Setting CloudFront
-              aws cloudfront create-invalidation --distribution-id "E391GJR6NFDKFC" --paths "/*"
-            else
-              echo "S3 path s3://${{ inputs.qa_fe_bucket }}/minor/pre-out does not exist. Skipping sync and invalidation."
-            fi
-          fi 
+          if [[ "${{ inputs.release_env }}" == 'QA' ]]; then
+            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/major/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/major/out" "EOTSDFTM2NPH0"
+          elif [[ "${{ inputs.release_env }}" == 'QA/MINOR' ]]; then
+            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/minor/out" "E391GJR6NFDKFC"
+          elif [[ "${{ inputs.release_env }}" == 'QA/BOTH' ]]; then
+            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/major/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/major/out" "EOTSDFTM2NPH0"
+            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/minor/out" "E391GJR6NFDKFC"
+          fi
 
   #1.0.2 SSR 구성
   hotfix-deploy:
