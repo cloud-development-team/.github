@@ -53,6 +53,8 @@ jobs:
             
             if grep -q "MINOR" <<< "${{ inputs.release_env }}"; then
                 dm_sw_ver="minor"
+            elif grep -q "BOTH" <<< "${{ inputs.release_env }}"; then
+                dm_sw_ver="both"
             else
                 dm_sw_ver="major"
             fi
