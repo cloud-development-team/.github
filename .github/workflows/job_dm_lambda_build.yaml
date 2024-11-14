@@ -203,7 +203,17 @@ jobs:
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
           fetch-depth: 0
 
+      - name: Check if Tag Exists
+        id: tag_check
+        run: |
+          if git rev-parse "refs/tags/${{ needs.versioning.outputs.version }}" >/dev/null 2>&1; then
+            echo "::set-output name=tag_exists::true"
+          else
+            echo "::set-output name=tag_exists::false"
+          fi
+
       - name: Create Release
+        if: steps.tag_check.outputs.tag_exists == 'false'
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
