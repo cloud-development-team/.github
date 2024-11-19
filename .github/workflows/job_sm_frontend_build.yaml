@@ -150,6 +150,7 @@ jobs:
           fi
       
       - name: Zip build output
+        if: inputs.target_branch != 'production'
         working-directory: ${{ inputs.working_dir }}
         run: |
           zip -qry frontend.zip ./build/
@@ -207,10 +208,20 @@ jobs:
             aws s3 sync s3://sm018-hotfix-static-d-an2/hotfix/build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
           elif [ "${{ inputs.version }}" == "major" ]; then
             aws s3 sync s3://sm018-static-q-ue1/release/build/major s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-            aws s3 sync s3://sm018-static-q-ue1/release/build/major s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/major/${{ inputs.release_version }} --delete --region ${{ needs.initial-tasks.outputs.region }}
+            
+            # store file to rollback bucket (CICD bucket)
+
+            aws s3 sync s3://sm018-static-q-ue1/release/build/major ./rollback
+            zip -qry frontend.zip ./rollback/
+            aws s3 sync ./frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/major/${{ inputs.release_version }} --delete --region ${{ needs.initial-tasks.outputs.region }}
           elif [ "${{ inputs.version }}" == "minor" ]; then
             aws s3 sync s3://sm018-static-q-ue1/release/build/minor s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
-            aws s3 sync s3://sm018-static-q-ue1/release/build/minor s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/minor/${{ inputs.release_version }} --delete --region ${{ needs.initial-tasks.outputs.region }}
+            
+            # store file to rollback bucket (CICD bucket)
+            
+            aws s3 sync s3://sm018-static-q-ue1/release/build/minor ./rollback
+            zip -qry frontend.zip ./rollback/
+            aws s3 sync ./frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/minor/${{ inputs.release_version }} --delete --region ${{ needs.initial-tasks.outputs.region }}
           fi
 
           # Setting CloudFront
