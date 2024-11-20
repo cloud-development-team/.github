@@ -153,7 +153,14 @@ jobs:
         if: inputs.target_branch != 'production'
         working-directory: ${{ inputs.working_dir }}
         run: |
-          zip -qry frontend.zip ./build/
+          zip -qry $GITHUB_WORKSPACE/frontend.zip ./build/
+
+          if [ -f "$GITHUB_WORKSPACE/frontend.zip" ]; then
+            echo "Zip file created successfully."
+          else
+            echo "Error: frontend.zip was not created."
+            exit 1
+          fi
 
       # Login To HVC_Admin_Automation for Deploy
       - name: Configure AWS credentials
@@ -177,10 +184,12 @@ jobs:
           # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
           if [ "${{ inputs.version }}" == "major" ]; then
             aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/major --delete --region ${{ needs.initial-tasks.outputs.region }}
-            aws s3 sync frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/major/${{ inputs.release_version }} --delete --region ${{ needs.initial-tasks.outputs.region }}
+            aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/major/${{ inputs.release_version }} --region ${{ needs.initial-tasks.outputs.region }}
+
           elif [ "${{ inputs.version }}" == "minor" ]; then
             aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/minor --delete --region ${{ needs.initial-tasks.outputs.region }}
-            aws s3 sync frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/minor/${{ inputs.release_version }} --delete --region ${{ needs.initial-tasks.outputs.region }}
+            aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/minor/${{ inputs.release_version }} --region ${{ needs.initial-tasks.outputs.region }}
+
           fi
 
           # Setting CloudFront
@@ -212,16 +221,16 @@ jobs:
             # store file to rollback bucket (CICD bucket)
 
             aws s3 sync s3://sm018-static-q-ue1/release/build/major ./rollback
-            zip -qry frontend.zip ./rollback/
-            aws s3 sync ./frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/major/${{ inputs.release_version }} --delete --region ${{ needs.initial-tasks.outputs.region }}
+            zip -qry $GITHUB_WORKSPACE/frontend.zip ./rollback/
+            aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/major/${{ inputs.release_version }} --region ${{ needs.initial-tasks.outputs.region }}
           elif [ "${{ inputs.version }}" == "minor" ]; then
             aws s3 sync s3://sm018-static-q-ue1/release/build/minor s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
             
             # store file to rollback bucket (CICD bucket)
 
             aws s3 sync s3://sm018-static-q-ue1/release/build/minor ./rollback
-            zip -qry frontend.zip ./rollback/
-            aws s3 sync ./frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/minor/${{ inputs.release_version }} --delete --region ${{ needs.initial-tasks.outputs.region }}
+            zip -qry $GITHUB_WORKSPACE/frontend.zip ./rollback/
+            aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/minor/${{ inputs.release_version }} --region ${{ needs.initial-tasks.outputs.region }}
           fi
 
           # Setting CloudFront
