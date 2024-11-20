@@ -184,11 +184,11 @@ jobs:
           # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
           if [ "${{ inputs.version }}" == "major" ]; then
             aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/major --delete --region ${{ needs.initial-tasks.outputs.region }}
-            aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/major/${{ inputs.release_version }} --region ${{ needs.initial-tasks.outputs.region }}
+            aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/major/${{ inputs.release_version }}/frontend.zip --region ${{ needs.initial-tasks.outputs.region }}
 
           elif [ "${{ inputs.version }}" == "minor" ]; then
             aws s3 sync ./build s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build/minor --delete --region ${{ needs.initial-tasks.outputs.region }}
-            aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/minor/${{ inputs.release_version }} --region ${{ needs.initial-tasks.outputs.region }}
+            aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/minor/${{ inputs.release_version }}/frontend.zip --region ${{ needs.initial-tasks.outputs.region }}
 
           fi
 
@@ -222,7 +222,7 @@ jobs:
 
             aws s3 sync s3://sm018-static-q-ue1/release/build/major ./rollback
             zip -qry $GITHUB_WORKSPACE/frontend.zip ./rollback/
-            aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/major/${{ inputs.release_version }} --region ${{ needs.initial-tasks.outputs.region }}
+            aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/major/${{ inputs.release_version }}/frontend.zip --region ${{ needs.initial-tasks.outputs.region }}
           elif [ "${{ inputs.version }}" == "minor" ]; then
             aws s3 sync s3://sm018-static-q-ue1/release/build/minor s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
             
@@ -230,7 +230,7 @@ jobs:
 
             aws s3 sync s3://sm018-static-q-ue1/release/build/minor ./rollback
             zip -qry $GITHUB_WORKSPACE/frontend.zip ./rollback/
-            aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/minor/${{ inputs.release_version }} --region ${{ needs.initial-tasks.outputs.region }}
+            aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/minor/${{ inputs.release_version }}/frontend.zip --region ${{ needs.initial-tasks.outputs.region }}
           fi
 
           # Setting CloudFront
