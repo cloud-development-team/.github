@@ -139,12 +139,11 @@ jobs:
           aws-region: ${{ needs.init.outputs.region }}
 
       - name: Get environment variables from s3
+        if: inputs.target_branch != 'production'
         run: |
           # Define the bucket and prefixes
           bucket="${{ needs.init.outputs.env_bucket }}"          
-
           env_script="aws s3 sync s3://${bucket}/latest/ /home/ubuntu/.sightmind/"
-
           sed -i "/^aws s3 sync/ s|.*|${env_script}|" ./codedeploy/deploy.sh
 
       - name: Build
@@ -154,6 +153,35 @@ jobs:
           npm run build
           echo "================"
           ls -al apps/*/src
+
+      - name: Prepare deploy artifact for production
+        if: inputs.target_branch == 'production'
+        run: |
+          # Fetch QA build artifact
+          if [ "${{ inputs.target_version }}" == "hotfix" ]; then
+            target_bucket="s3://sm018-hotfix-cicd-d-an2/backend/deploy.zip"
+          elif [ "${{ inputs.version }}" == "major" ]; then
+            target_bucket="s3://sm018-cicd-q-ue1/backend/major/deploy.zip"
+          elif [ "${{ inputs.version }}" == "major" ]; then
+            target_bucket="s3://sm018-cicd-q-ue1/backend/minor/deploy.zip"
+          else
+            echo "Invalid version"
+            exit 1
+          fi
+          
+          aws s3 cp ${target_bucket} ./deploy.zip --only-show-errors
+          
+          # Unzip the artifact
+          unzip deploy.zip -d /tmp/deploy
+          
+          # Update target environment bucket
+          bucket="${{ needs.init.outputs.env_bucket }}"
+          env_script="aws s3 sync s3://${bucket}/latest/ /home/ubuntu/.sightmind/"
+          sed -i "/^aws s3 sync/ s|.*|${env_script}|" /tmp/deploy/codedeploy/deploy.sh
+          
+          # Recreate the deploy.zip with updated files
+          cd /tmp/deploy
+          zip -qry /home/ubuntu/deploy_modified.zip .
 
       - name: Zip build output
         if: inputs.target_branch != 'production'
@@ -182,9 +210,9 @@ jobs:
             fi
           else
             if [ "${{ inputs.version }}" == "major" ]; then
-              aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/major/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
+              aws s3 cp /home/ubuntu/deploy_modified.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/major/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
             elif [ "${{ inputs.version }}" == "minor" ]; then
-              aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/minor/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
+              aws s3 cp /home/ubuntu/deploy_modified.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/minor/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
             fi
           fi
           
