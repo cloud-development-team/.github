@@ -137,9 +137,7 @@ jobs:
         run: |
           # Define the bucket and prefixes
           bucket="${{ needs.init.outputs.env_bucket }}"
-
           env_script="aws s3 sync s3://${bucket}/latest/ /home/ubuntu/.visioncommon/"
-
           sed -i "/^aws s3 sync/ s|.*|${env_script}|" ./codedeploy/deploy.sh
 
       - name: Build
@@ -156,6 +154,30 @@ jobs:
         run: |
           zip -qry deploy.zip .
 
+      - name: Prepare deploy artifact for production
+        if: inputs.target_branch == 'production'
+        run: |
+          # Fetch QA build artifact
+          if [ "${{ inputs.target_version }}" == "hotfix" ]; then
+            target_bucket="s3://vcm021-hotfix-cicd-d-an2/authZ/deploy.zip"
+          else
+            target_bucket="s3://vcm021-cicd-q-ue1/authZ/deploy.zip"
+          fi
+          
+          aws s3 cp ${target_bucket} ./deploy.zip --only-show-errors
+          
+          # Unzip the artifact
+          unzip deploy.zip -d /tmp/deploy
+          
+          # Update target environment bucket
+          bucket="${{ needs.init.outputs.env_bucket }}"
+          env_script="aws s3 sync s3://${bucket}/latest/ /home/ubuntu/.visioncommon/"
+          sed -i "/^aws s3 sync/ s|.*|${env_script}|" /tmp/deploy/codedeploy/deploy.sh
+          
+          # Recreate the deploy.zip with updated files
+          cd /tmp/deploy
+          zip -qry /home/ubuntu/deploy_modified.zip .
+
       - name: Push build artifact to S3 Bucket
         working-directory: ${{ inputs.working_dir }}
         run: |
@@ -168,11 +190,7 @@ jobs:
           # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
           if [ "${{ inputs.target_branch }}"  == "production" ]; then
             echo "production upload"
-            if [ "${{ inputs.target_version }}" == "hotfix" ]; then
-              aws s3 cp s3://vcm021-hotfix-cicd-d-an2/authZ/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
-            else
-              aws s3 cp s3://vcm021-cicd-q-ue1/authZ/deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
-            fi
+            aws s3 cp /home/ubuntu/deploy_modified.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
           else
             aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/authZ/deploy.zip --only-show-errors  --metadata version=${{ inputs.release_version }}
           fi
