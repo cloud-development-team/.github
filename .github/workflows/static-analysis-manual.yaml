@@ -28,7 +28,6 @@ on:
           - dmpro-hook-portal
           - dmpro-manager-schedule
           - dmpro-updater-devicemodel
-          - hvcp-authorization
           - dmpro-scheduler-consumer
           - dmpro-scheduler-producer
           - dmpro-updater-warranty
