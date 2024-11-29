@@ -155,7 +155,7 @@ jobs:
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}" 
     
   dmpro:
-    if: ${{ github.actor == 'jenkins-se' && (inputs.jira_key == 'OPS' || inputs.jira_key == 'CPD') }}
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'CPD' }}
     needs: [initial_setting]
     name: DMPro Backend Deploy
     uses: ./.github/workflows/deploy-dmpro.yaml
