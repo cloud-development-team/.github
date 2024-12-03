@@ -153,6 +153,12 @@ jobs:
           npm run build
           echo "================"
           ls -al apps/*/src
+      
+      - name: Zip build output
+        if: inputs.target_branch != 'production'
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          zip -qry deploy.zip .
 
       - name: Prepare deploy artifact for production
         if: inputs.target_branch == 'production'
@@ -181,13 +187,7 @@ jobs:
           
           # Recreate the deploy.zip with updated files
           cd /tmp/deploy
-          zip -qry /home/ubuntu/deploy_modified.zip .
-
-      - name: Zip build output
-        if: inputs.target_branch != 'production'
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          zip -qry deploy.zip .
+          zip -qry $GITHUB_WORKSPACE/deploy_modified.zip .
 
       - name: Push build artifact to S3 Bucket
         working-directory: ${{ inputs.working_dir }}
@@ -201,7 +201,7 @@ jobs:
           # Upload build artifact to S3 bucket and This command triggers the dev CodePipeline.
           if [ "${{ inputs.target_branch }}" == "production" ]; then
             echo "production upload"
-            aws s3 cp /home/ubuntu/deploy_modified.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
+            aws s3 cp $GITHUB_WORKSPACE/deploy_modified.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
           else
             if [ "${{ inputs.version }}" == "major" ]; then
               aws s3 cp ./deploy.zip s3://${{ needs.init.outputs.s3_bucket }}/backend/major/deploy.zip --only-show-errors --metadata version=${{ inputs.release_version }}
