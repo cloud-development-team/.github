@@ -221,7 +221,8 @@ jobs:
             # store file to rollback bucket (CICD bucket)
 
             aws s3 sync s3://sm018-static-q-ue1/release/build/major ./rollback
-            zip -qry $GITHUB_WORKSPACE/frontend.zip ./rollback/
+            cd ./rollback
+            zip -qry $GITHUB_WORKSPACE/frontend.zip ./
             aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/major/${{ inputs.release_version }}/frontend.zip --region ${{ needs.initial-tasks.outputs.region }}
           elif [ "${{ inputs.version }}" == "minor" ]; then
             aws s3 sync s3://sm018-static-q-ue1/release/build/minor s3://${{ needs.initial-tasks.outputs.s3_bucket }}/${{ inputs.target_branch }}/build --delete --region ${{ needs.initial-tasks.outputs.region }}
@@ -229,7 +230,8 @@ jobs:
             # store file to rollback bucket (CICD bucket)
 
             aws s3 sync s3://sm018-static-q-ue1/release/build/minor ./rollback
-            zip -qry $GITHUB_WORKSPACE/frontend.zip ./rollback/
+            cd ./rollback
+            zip -qry $GITHUB_WORKSPACE/frontend.zip ./
             aws s3 cp $GITHUB_WORKSPACE/frontend.zip s3://${{ needs.initial-tasks.outputs.s3_rollback_bucket }}/frontend/minor/${{ inputs.release_version }}/frontend.zip --region ${{ needs.initial-tasks.outputs.region }}
           fi
 
