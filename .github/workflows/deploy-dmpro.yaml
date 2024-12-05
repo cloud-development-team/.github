@@ -85,7 +85,7 @@ jobs:
 
   qa-deploy-lambda-email:
     name: DMPro QA Lambda Deploy Email
-    if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.detect-changes.outputs.email == 'true'}}
+    if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.qa-lambda-detect-changes.outputs.email == 'true'}}
     needs: qa-lambda-detect-changes
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     with:
