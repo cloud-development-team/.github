@@ -147,6 +147,7 @@ jobs:
           zip -qry function.zip ./dist
 
       - name: Lambda Code Update
+        environment: dm_${{ inputs.branch }}
         run: |
           # Assume Role using an Automation Key
           identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ needs.init.outputs.account }}:role/AWSControlTowerExecution --role-session-name AWS)
