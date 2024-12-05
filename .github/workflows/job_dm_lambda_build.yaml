@@ -30,6 +30,11 @@ on:
         required: true
         default: "['20.14.0']"
         type: string
+      service: 
+        required: false
+        description: "service selector"
+        type: string
+        default: "none"
 
 env:
   CODEFREEZE: ${{ secrets.CODEFREEZE }}
@@ -44,7 +49,6 @@ jobs:
     outputs:
       region: ${{ steps.set_env.outputs.region }}
       account: ${{ steps.set_env.outputs.account }}
-      function_name: ${{ steps.set_env.outputs.function_name }}
       json_path: ${{ steps.set_env.outputs.json_path }}
       bucket: ${{ steps.set_env.outputs.bucket }}
 
@@ -54,7 +58,6 @@ jobs:
         run: |
           echo "region=${{ vars.REGION }}" >> $GITHUB_OUTPUT
           echo "account=${{ vars.ACCOUNT }}" >> $GITHUB_OUTPUT
-          echo "function_name=${{ vars.FUNCTION }}" >> $GITHUB_OUTPUT
           echo "json_path=${{ vars.JSONPATH }}" >> $GITHUB_OUTPUT
           echo "bucket=${{ vars.BUCKET }}" >> $GITHUB_OUTPUT
 
@@ -151,22 +154,24 @@ jobs:
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
+          if [ "${{ needs.detect-changes.outputs.email == 'true'}}" ]; then
+            function_name=${{ vars.FUNCTION_EMAIL }}
+          else
+            function_name=${{ vars.FUNCTION_UPGRADE }}
+          fi
+
           if ${{ inputs.branch == 'release' }}; then
-            pwd
-            ls
-            cd ./lambda/firmware_upgrade
-            aws s3 cp function.zip s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip --metadata version=${{ needs.versioning.outputs.version }}
             VERSION=${{ needs.versioning.outputs.version }}
+            aws s3 cp function.zip s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip --metadata version=$VERSION
           elif ${{ inputs.branch == 'production' }}; then
             aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip ./function.zip
             VERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key lambda-build/function.zip --query 'Metadata.version' --output text)
-            echo "Version: $VERSION"
             aws s3 rm s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip
           fi
 
-          aws lambda update-function-code --function-name ${{ needs.init.outputs.function_name }} --zip-file fileb://function.zip > /dev/null
+          aws lambda update-function-code --function-name $function_name --zip-file fileb://function.zip > /dev/null
             while true; do
-              STATUS=$(aws lambda get-function --function-name ${{ needs.init.outputs.function_name }} --query 'Configuration.[LastUpdateStatus]' --output text)
+              STATUS=$(aws lambda get-function --function-name $function_name --query 'Configuration.[LastUpdateStatus]' --output text)
               if [ "$STATUS" == "Successful" ]; then
                 echo "Lambda update completed. Proceeding with version publishing."
                 break
@@ -175,7 +180,7 @@ jobs:
                 sleep 3
               fi
             done
-          aws lambda publish-version --function-name ${{ needs.init.outputs.function_name }} --description "$VERSION" > /dev/null
+          aws lambda publish-version --function-name $function_name --description "$VERSION" > /dev/null
 
   gitops-update-call:
     needs: [init, versioning, npm-build]
