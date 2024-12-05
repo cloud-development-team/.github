@@ -216,7 +216,7 @@ jobs:
   create-release:
     name: Create Lambda Github Release
     if: ${{ inputs.branch == 'release' }}
-    needs: [versioning, npm-build, gitops-update-call]
+    needs: [versioning, npm-build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
