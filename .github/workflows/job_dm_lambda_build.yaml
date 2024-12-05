@@ -59,7 +59,7 @@ jobs:
         run: |
           echo "set env"
          
-          if [ "${{ inputs.service == 'email'}}" ]; then
+          if ${{ inputs.service == 'email'}}; then
             function_name=${{ vars.FUNCTION_EMAIL }}
             echo $function_name
           else
