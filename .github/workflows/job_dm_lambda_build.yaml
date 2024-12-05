@@ -174,18 +174,18 @@ jobs:
             # aws s3 rm s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip
           fi
 
-          aws lambda update-function-code --function-name $function_name --zip-file fileb://function.zip > /dev/null
-            while true; do
-              STATUS=$(aws lambda get-function --function-name $function_name --query 'Configuration.[LastUpdateStatus]' --output text)
-              if [ "$STATUS" == "Successful" ]; then
-                echo "Lambda update completed. Proceeding with version publishing."
-                break
-              else
-                echo "Update in progress. Waiting..."
-                sleep 3
-              fi
-            done
-          aws lambda publish-version --function-name $function_name --description "$VERSION" > /dev/null
+          # aws lambda update-function-code --function-name ${{ needs.init.outputs.function_name }} --zip-file fileb://function.zip > /dev/null
+          #   while true; do
+          #     STATUS=$(aws lambda get-function --function-name ${{ needs.init.outputs.function_name }} --query 'Configuration.[LastUpdateStatus]' --output text)
+          #     if [ "$STATUS" == "Successful" ]; then
+          #       echo "Lambda update completed. Proceeding with version publishing."
+          #       break
+          #     else
+          #       echo "Update in progress. Waiting..."
+          #       sleep 3
+          #     fi
+          #   done
+          # aws lambda publish-version --function-name ${{ needs.init.outputs.function_name }} --description "$VERSION" > /dev/null
 
   gitops-update-call-email:
     needs: [init, versioning, npm-build]
