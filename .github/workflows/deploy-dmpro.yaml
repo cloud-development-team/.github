@@ -288,17 +288,17 @@ jobs:
   #         git push origin main
   #       continue-on-error: true
 
-  # prod-deploy-lambda:
-  #   name: DMPro PROD Lambda Deploy
-  #   if: ${{ inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' }}
-  #   uses: ./.github/workflows/job_dm_lambda_build.yaml
-  #   with:
-  #     branch: production
-  #     repo: ${{ inputs.dm_lambda_repo }}         
-  #     working_dir: ./lambda/firmware_upgrade
-  #     node_versions: "['20.14.0']"
-  #     service: "upgrade"
-  #   secrets: inherit
+  prod-deploy-lambda:
+    name: DMPro PROD Lambda Deploy
+    if: ${{ inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' }}
+    uses: ./.github/workflows/job_dm_lambda_build.yaml
+    with:
+      branch: production
+      repo: ${{ inputs.dm_lambda_repo }}         
+      working_dir: ./lambda/firmware_upgrade
+      node_versions: "['20.14.0']"
+      service: "upgrade"
+    secrets: inherit
 
   # prod-deploy:
   #   name: DMPro PROD Deploy
