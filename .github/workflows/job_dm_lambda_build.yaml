@@ -210,7 +210,7 @@ jobs:
       image_tag: ${{ needs.versioning.outputs.version }}-upgrade
       yaml_path: "no_eks"
       json_path: ${{ needs.init.outputs.json_path }}
-      application_name: "dmpro-agent-scheduler-upgrade
+      application_name: "dmpro-agent-scheduler-upgrade"
     secrets: inherit
 
   create-release:
