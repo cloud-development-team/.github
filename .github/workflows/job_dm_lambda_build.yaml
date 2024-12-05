@@ -51,15 +51,24 @@ jobs:
       account: ${{ steps.set_env.outputs.account }}
       json_path: ${{ steps.set_env.outputs.json_path }}
       bucket: ${{ steps.set_env.outputs.bucket }}
+      function_name: ${{ steps.set_env.outputs.function_name }}
 
     steps:
       - name: set env
         id: set_env
         run: |
+         
+          if [ "${{ needs.detect-changes.outputs.email == 'true'}}" ]; then
+            function_name=${{ vars.FUNCTION_EMAIL }}
+          else
+            function_name=${{ vars.FUNCTION_UPGRADE }}
+          fi
+
           echo "region=${{ vars.REGION }}" >> $GITHUB_OUTPUT
           echo "account=${{ vars.ACCOUNT }}" >> $GITHUB_OUTPUT
           echo "json_path=${{ vars.JSONPATH }}" >> $GITHUB_OUTPUT
           echo "bucket=${{ vars.BUCKET }}" >> $GITHUB_OUTPUT
+          echo "function_name=$function_name" >> $GITHUB_OUTPUT
 
   versioning: 
     name: Lambda Versioning
@@ -147,7 +156,6 @@ jobs:
           zip -qry function.zip ./dist
 
       - name: Lambda Code Update
-        environment: dm_${{ inputs.branch }}
         run: |
           # Assume Role using an Automation Key
           identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ needs.init.outputs.account }}:role/AWSControlTowerExecution --role-session-name AWS)
@@ -155,18 +163,12 @@ jobs:
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
-          if [ "${{ needs.detect-changes.outputs.email == 'true'}}" ]; then
-            function_name=${{ vars.FUNCTION_EMAIL }}
-          else
-            function_name=${{ vars.FUNCTION_UPGRADE }}
-          fi
-
           if ${{ inputs.branch == 'release' }}; then
             VERSION=${{ needs.versioning.outputs.version }}
-            echo "Current function_name: $function_name"
+            echo "Current function_name: $${{ needs.init.outputs.function_name }}"
             # aws s3 cp function.zip s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip --metadata version=$VERSION
           elif ${{ inputs.branch == 'production' }}; then
-            echo "Current function_name: $function_name"
+            echo "Current function_name: $${{ needs.init.outputs.function_name }}"
             # aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip ./function.zip
             VERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key lambda-build/function.zip --query 'Metadata.version' --output text)
             # aws s3 rm s3://${{ needs.init.outputs.bucket }}/lambda-build/function.zip
