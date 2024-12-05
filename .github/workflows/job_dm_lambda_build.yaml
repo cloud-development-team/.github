@@ -187,16 +187,30 @@ jobs:
           #   done
           # aws lambda publish-version --function-name $function_name --description "$VERSION" > /dev/null
 
-  gitops-update-call:
+  gitops-update-call-email:
     needs: [init, versioning, npm-build]
+    if: ${{ inputs.service == 'email' }}
     uses: cloud-development-team/.github/.github/workflows/gitops-update.yaml@main
     with:
       repository_name: "cloud-development-team/dmpro-gitops"
       image_name: "no_eks"
-      image_tag: ${{ needs.versioning.outputs.version }}
+      image_tag: ${{ needs.versioning.outputs.version }}-image
       yaml_path: "no_eks"
       json_path: ${{ needs.init.outputs.json_path }}
-      application_name: "dmpro-agent-scheduler"
+      application_name: "dmpro-agent-scheduler-email"
+    secrets: inherit
+
+  gitops-update-call-upgrade:
+    needs: [init, versioning, npm-build]
+    if: ${{ inputs.service == 'upgrade' }}
+    uses: cloud-development-team/.github/.github/workflows/gitops-update.yaml@main
+    with:
+      repository_name: "cloud-development-team/dmpro-gitops"
+      image_name: "no_eks"
+      image_tag: ${{ needs.versioning.outputs.version }}-upgrade
+      yaml_path: "no_eks"
+      json_path: ${{ needs.init.outputs.json_path }}
+      application_name: "dmpro-agent-scheduler-upgrade
     secrets: inherit
 
   create-release:
@@ -223,7 +237,7 @@ jobs:
           fi
 
       - name: Create Release
-        if: steps.tag_check.outputs.tag_exists == 'false'
+        if: steps.tag_check.outputs.tag_exists == 'false' 
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
