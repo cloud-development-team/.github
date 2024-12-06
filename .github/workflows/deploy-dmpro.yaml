@@ -83,18 +83,18 @@ jobs:
             upgrade:
               - './lambda/firmware_upgrade/**'
 
-  # qa-deploy-lambda-email:
-  #   name: DMPro QA Lambda Deploy Email
-  #   if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.qa-lambda-detect-changes.outputs.email == 'true'}}
-  #   needs: qa-lambda-detect-changes
-  #   uses: ./.github/workflows/job_dm_lambda_build.yaml
-  #   with:
-  #     branch: release
-  #     repo: ${{ inputs.dm_lambda_repo }}         
-  #     working_dir: ./lambda/firmware_email
-  #     node_versions: "['20.14.0']"
-  #     service: "email"
-  #   secrets: inherit
+  qa-deploy-lambda-email:
+    name: DMPro QA Lambda Deploy Email
+    if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.qa-lambda-detect-changes.outputs.email == 'true'}}
+    needs: qa-lambda-detect-changes
+    uses: ./.github/workflows/job_dm_lambda_build.yaml
+     ith:
+      branch: release
+      repo: ${{ inputs.dm_lambda_repo }}         
+      working_dir: ./lambda/firmware_email
+      node_versions: "['20.14.0']"
+      service: "email"
+    secrets: inherit
 
   qa-deploy-lambda-upgrade:
     name: DMPro QA Lambda Deploy Upgrade
