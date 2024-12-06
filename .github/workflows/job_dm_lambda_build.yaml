@@ -165,12 +165,11 @@ jobs:
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
-
-          if ${{ inputs.branch == 'release' }}; then
+          if [[ "${{ inputs.branch }}" == 'release' ]]; then
             VERSION=${{ needs.versioning.outputs.version }}
             echo "Current function_name: ${{ needs.init.outputs.function_name }}"
             aws s3 cp function.zip s3://${{ needs.init.outputs.bucket }}/lambda-build/${{ inputs.service }}/function.zip --metadata version=$VERSION
-          elif ${{ inputs.branch == 'production' }}; then
+          elif [[ "${{ inputs.branch }}" == 'production' ]]; then
             echo "Current function_name: ${{ needs.init.outputs.function_name }}"
             aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/${{ inputs.service }}/function.zip ./function.zip
             VERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key lambda-build/${{ inputs.service }}/function.zip --query 'Metadata.version' --output text)
