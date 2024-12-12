@@ -215,7 +215,7 @@ jobs:
                   sleep 3
                 fi
               done
-            aws lambda publish-version --function-name ${{ needs.init.outputs.function_email }} --description "$UPGRADEVERSION" > /dev/null
+            aws lambda publish-version --function-name ${{ needs.init.outputs.function_email }} --description "$EMAILVERSION" > /dev/null
 
             aws lambda update-function-code --function-name ${{ needs.init.outputs.function_upgrade }} --zip-file fileb://function-up.zip > /dev/null
               while true; do
