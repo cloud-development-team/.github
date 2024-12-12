@@ -27,7 +27,7 @@ on:
         type: string
       node_versions:
         description: 'node versions'
-        required: true
+        required: false
         default: "['20.14.0']"
         type: string
       service: 

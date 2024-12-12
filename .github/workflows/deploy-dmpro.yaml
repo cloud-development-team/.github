@@ -296,7 +296,6 @@ jobs:
       branch: production
       repo: ${{ inputs.dm_lambda_repo }}         
       working_dir: ./lambda
-      node_versions: "no-build"
       service: "both"
     secrets: inherit
 
