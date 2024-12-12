@@ -294,8 +294,7 @@ jobs:
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     with:
       branch: production
-      repo: ${{ inputs.dm_lambda_repo }}         
-      working_dir: ./lambda
+      repo: ${{ inputs.dm_lambda_repo }}     
       service: "both"
     secrets: inherit
 
