@@ -42,7 +42,7 @@ env:
 
 jobs:
   init: 
-    name: Lambda Deploy Init
+    name: Lambda Deploy Init ${{ inputs.branch }}
     runs-on: ubuntu-latest
     environment: dm_${{ inputs.branch }}
     
@@ -72,6 +72,8 @@ jobs:
           echo "json_path=${{ vars.JSONPATH }}" >> $GITHUB_OUTPUT
           echo "bucket=${{ vars.BUCKET }}" >> $GITHUB_OUTPUT
           echo "function_name=$function_name" >> $GITHUB_OUTPUT
+          echo "function_email=${{ vars.FUNCTION_EMAIL }}" >> $GITHUB_OUTPUT
+          echo "function_upgrade=${{ vars.FUNCTION_UPGRADE }}" >> $GITHUB_OUTPUT
 
   versioning: 
     name: Lambda Versioning
@@ -166,29 +168,67 @@ jobs:
           export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+
           if [[ "${{ inputs.branch }}" == 'release' ]]; then
+            if ${{ inputs.service == 'email'}}; then
+              function_name=${{ vars.FUNCTION_EMAIL }}
+            else
+              function_name=${{ vars.FUNCTION_UPGRADE }}
+            fi
+
             VERSION=${{ needs.versioning.outputs.version }}
             echo "Current function_name: ${{ needs.init.outputs.function_name }}"
             aws s3 cp function.zip s3://${{ needs.init.outputs.bucket }}/lambda-build/${{ inputs.service }}/function.zip --metadata version=$VERSION
-          elif [[ "${{ inputs.branch }}" == 'production' ]]; then
-            echo "Current function_name: ${{ needs.init.outputs.function_name }}"
-            aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/${{ inputs.service }}/function.zip ./function.zip
-            VERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key lambda-build/${{ inputs.service }}/function.zip --query 'Metadata.version' --output text)
-            aws s3 rm s3://${{ needs.init.outputs.bucket }}/lambda-build/${{ inputs.service }}/function.zip
-          fi
 
-          aws lambda update-function-code --function-name ${{ needs.init.outputs.function_name }} --zip-file fileb://function.zip > /dev/null
-            while true; do
-              STATUS=$(aws lambda get-function --function-name ${{ needs.init.outputs.function_name }} --query 'Configuration.[LastUpdateStatus]' --output text)
-              if [ "$STATUS" == "Successful" ]; then
-                echo "Lambda update completed. Proceeding with version publishing."
-                break
-              else
-                echo "Update in progress. Waiting..."
-                sleep 3
-              fi
-            done
-          aws lambda publish-version --function-name ${{ needs.init.outputs.function_name }} --description "$VERSION" > /dev/null
+            aws lambda update-function-code --function-name $function_name --zip-file fileb://function.zip > /dev/null
+              while true; do
+                STATUS=$(aws lambda get-function --function-name $function_name --query 'Configuration.[LastUpdateStatus]' --output text)
+                if [ "$STATUS" == "Successful" ]; then
+                  echo "Lambda update completed. Proceeding with version publishing."
+                  break
+                else
+                  echo "Update in progress. Waiting..."
+                  sleep 3
+                fi
+              done
+            aws lambda publish-version --function-name function_name --description "$VERSION" > /dev/null
+
+          elif [[ "${{ inputs.branch }}" == 'production' ]]; then
+            aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/email/function.zip ./function-email.zip
+            aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/upgrade/function.zip ./function-up.zip
+
+            EMAILVERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key lambda-build/email/function.zip --query 'Metadata.version' --output text)
+            UPGRADEVERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key lambda-build/upgrade/function.zip --query 'Metadata.version' --output text)
+
+            aws lambda update-function-code --function-name ${{ vars.FUNCTION_EMAIL }} --zip-file fileb://function-email.zip > /dev/null
+              while true; do
+                STATUS=$(aws lambda get-function --function-name ${{ vars.FUNCTION_EMAIL }} --query 'Configuration.[LastUpdateStatus]' --output text)
+                if [ "$STATUS" == "Successful" ]; then
+                  echo "Lambda update completed. Proceeding with version publishing."
+                  break
+                else
+                  echo "Update in progress. Waiting..."
+                  sleep 3
+                fi
+              done
+            aws lambda publish-version --function-name ${{ vars.FUNCTION_UPGRADE }} --description "$UPGRADEVERSION" > /dev/null
+
+            aws lambda update-function-code --function-name ${{ vars.FUNCTION_UPGRADE }} --zip-file fileb://function-up.zip > /dev/null
+              while true; do
+                STATUS=$(aws lambda get-function --function-name ${{ vars.FUNCTION_UPGRADE }} --query 'Configuration.[LastUpdateStatus]' --output text)
+                if [ "$STATUS" == "Successful" ]; then
+                  echo "Lambda update completed. Proceeding with version publishing."
+                  break
+                else
+                  echo "Update in progress. Waiting..."
+                  sleep 3
+                fi
+              done
+            aws lambda publish-version --function-name ${{ vars.FUNCTION_UPGRADE }} --description "$UPGRADEVERSION" > /dev/null
+
+            aws s3 rm s3://${{ needs.init.outputs.bucket }}/lambda-build/email/function.zip
+            aws s3 rm s3://${{ needs.init.outputs.bucket }}/lambda-build/upgrade/function.zip
+          fi
 
   gitops-update-call-email:
     needs: [init, versioning, npm-build]
@@ -197,7 +237,7 @@ jobs:
     with:
       repository_name: "cloud-development-team/dmpro-gitops"
       image_name: "no_eks"
-      image_tag: ${{ needs.versioning.outputs.version }}-image
+      image_tag: ${{ needs.versioning.outputs.version }}-email
       yaml_path: "no_eks"
       json_path: ${{ needs.init.outputs.json_path }}
       application_name: "dmpro-agent-scheduler-email"
