@@ -193,7 +193,7 @@ jobs:
                   sleep 3
                 fi
               done
-            aws lambda publish-version --function-name function_name --description "$VERSION" > /dev/null
+            aws lambda publish-version --function-name $function_name --description "$VERSION" > /dev/null
 
           elif [[ "${{ inputs.branch }}" == 'production' ]]; then
             aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/email/function.zip ./function-email.zip
