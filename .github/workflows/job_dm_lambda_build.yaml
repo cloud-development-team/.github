@@ -175,7 +175,7 @@ jobs:
             if ${{ inputs.service == 'email'}}; then
               function_name=${{ needs.init.outputs.function_email }}
             else
-              function_name= ${{ needs.init.outputs.function_upgrade }}
+              function_name=${{ needs.init.outputs.function_upgrade }}
             fi
 
             VERSION=${{ needs.versioning.outputs.version }}
