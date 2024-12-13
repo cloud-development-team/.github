@@ -173,9 +173,9 @@ jobs:
 
           if [[ "${{ inputs.branch }}" == 'release' ]]; then
             if ${{ inputs.service == 'email'}}; then
-              function_name=${{ vars.FUNCTION_EMAIL }}
+              function_name=${{ needs.init.outputs.function_email }}
             else
-              function_name=${{ vars.FUNCTION_UPGRADE }}
+              function_name= ${{ needs.init.outputs.function_upgrade }}
             fi
 
             VERSION=${{ needs.versioning.outputs.version }}
