@@ -50,3 +50,58 @@ https://hanwhavision.atlassian.net/wiki/spaces/KDOG/pages/290848889/DNS+Naming+C
 
 `(<jira issue>)` 필드의 경우, 선택사항이지만 아래의 링크에 설명된 Autolink 설정을 해주면 코드의 변경점을 쉽게 트래킹 할 수 있으므로 가능하면 사용하는 것을 권장드립니다.
 https://htw-cloud.atlassian.net/wiki/spaces/KDOG/pages/255295491/Repository+Autolink
+
+
+
+# Welcome to the Cloud Development Team!
+
+We are a group of cloud experts dedicated to advancing the software and products we build.
+
+## Repository Naming Convention
+
+The naming of repositories follows the rules below:
+
+<project code>-<purpose>-<specific name>
+
+markdown
+Copy code
+
+Here, `<project code>` is an abbreviation of the project name to simplify the application of the naming convention, especially for longer project names.  
+The relationship between project codes and project names can be found in the project list below.
+
+## Domain Naming Rules
+
+Please refer to the following Confluence page for details:  
+[DNS Naming Convention for Hanwha Vision](https://hanwhavision.atlassian.net/wiki/spaces/KDOG/pages/290848889/DNS+Naming+Convention+for+Hanwha+Vision)
+
+## Project List
+
+A table summarizing the abbreviations and descriptions of various projects for use in repository names:
+
+| Project Name | Abbreviation | Description                                  |
+|--------------|--------------|----------------------------------------------|
+| hanwhacloud  | hc           | Cloud platform development project (previously named `hanwhacloud`; currently named `dmpro`. To be deprecated.) |
+| dmpro        | dmpro        | Device Manager Pro project                   |
+| sokcho       | sokcho       | Pilot project used before `hanwhacloud` development |
+| cloudrnd     | cloudrnd     | Resources generally used by the Cloud Development Team |
+|              |              |                                              |
+
+## Commit Convention
+
+All repositories within our organization follow the **Conventional Commit** guidelines.
+
+Commit messages should be written in the following format. For more details, refer to the [Conventional Commit documentation](https://github.com/conventional-changelog/commitlint/tree/master/%40commitlint/config-conventional):
+```
+<type>(<scope>): <short summary> (<jira issue>)
+  │       │             │         │
+  │       │             │         └─⫸ Jira issue ticket number, such as DEVO-123 or CPD-456, indicating the issue associated with the commit.
+  │       │             └─⫸ Written in imperative mood and present tense. Do not use capital letters and do not end with a period.
+  │       │
+  │       └─⫸ Commit Scope: Specifies the affected area, such as a module or library.
+  │
+  └─⫸ Commit Type: build | chore | ci | docs | feat | fix | perf | refactor | revert | style | test
+Both `<type>` and `<summary>` fields are mandatory, while `<scope>` and `<jira issue>` fields are optional.
+
+```
+
+Although the `<jira issue>` field is optional, it is highly recommended to use it. Setting up [Repository Autolink](h
