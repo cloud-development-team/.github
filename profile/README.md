@@ -16,7 +16,7 @@
 ## 도메인 이름 규칙
 
 아래의 Confluence Page를 참고 부탁드립니다.
-https://hanwhavision.atlassian.net/wiki/spaces/KDOG/pages/290848889/DNS+Naming+Convention+for+Hanwha+Vision
+https://hanwhavision.atlassian.net/wiki/spaces/OPS/pages/772571236/DNS+Naming+Convention+for+Hanwha+Vision
 
 ## 프로젝트 리스트
 
@@ -48,10 +48,6 @@ https://hanwhavision.atlassian.net/wiki/spaces/KDOG/pages/290848889/DNS+Naming+C
 <type>과 <summary> 필드는 필수 항목이며, (<scope>)와 (<jira issue>) 필드는 선택사항입니다.
 ```
 
-`(<jira issue>)` 필드의 경우, 선택사항이지만 아래의 링크에 설명된 Autolink 설정을 해주면 코드의 변경점을 쉽게 트래킹 할 수 있으므로 가능하면 사용하는 것을 권장드립니다.
-https://htw-cloud.atlassian.net/wiki/spaces/KDOG/pages/255295491/Repository+Autolink
-
-
 
 # Welcome to the Cloud Development Team!
 
@@ -72,7 +68,7 @@ The relationship between project codes and project names can be found in the pro
 ## Domain Naming Rules
 
 Please refer to the following Confluence page for details:  
-[DNS Naming Convention for Hanwha Vision](https://hanwhavision.atlassian.net/wiki/spaces/KDOG/pages/290848889/DNS+Naming+Convention+for+Hanwha+Vision)
+[DNS Naming Convention for Hanwha Vision](https://hanwhavision.atlassian.net/wiki/spaces/OPS/pages/772571236/DNS+Naming+Convention+for+Hanwha+Vision)
 
 ## Project List
 
