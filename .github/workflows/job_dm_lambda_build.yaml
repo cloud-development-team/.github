@@ -162,6 +162,46 @@ jobs:
         run: |
           zip -qry function.zip ./dist
 
+      - name: Lambda Environment Update
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          # Assume Role using an Automation Key
+          
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ needs.init.outputs.account }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+
+          if [ "${{ inputs.service }}" == "email" ]; then
+            function_name=${{ needs.init.outputs.function_email }}
+          else
+            function_name=${{ needs.init.outputs.function_upgrade }}
+          fi
+
+          if [[ "${{ inputs.branch }}" == 'release' ]]; then
+            env_path="./env/qa.json"
+          else
+            env_path="./env/prod.json"
+          fi
+ 
+          NEW_VARS=$(jq -r 'to_entries | map("\(.key)=\(.value)") | join(", ")' $env_path)
+
+          aws lambda update-function-configuration \
+                --function-name $function_name \
+                --environment "Variables={$NEW_VARS}"
+
+          while true; do
+            STATUS=$(aws lambda get-function --function-name $function_name --query 'Configuration.[LastUpdateStatus]' --output text)
+            echo "Current STATUS: $STATUS"
+            if [ "$STATUS" == "Successful" ]; then
+              echo "Environment updated."
+              break
+            else
+              echo "Environment Update in progress. Waiting..."
+              sleep 3
+            fi
+          done
+
       - name: Lambda Code Update
         working-directory: ${{ inputs.working_dir }}
         run: |
