@@ -184,7 +184,9 @@ jobs:
             env_path="./env/prod.json"
           fi
  
-          NEW_VARS=$(jq -r 'to_entries | map("\(.key)=\(.value)") | join(", ")' $env_path)
+          #NEW_VARS=$(jq -r 'to_entries | map("\(.key)=\(.value)") | join(", ")' $env_path)
+          NEW_VARS=$(jq -r 'to_entries | map("\(.key)=\"\(.value)\"") | join(", ")' $env_path)
+
 
           aws lambda update-function-configuration \
                 --function-name $function_name \
