@@ -106,16 +106,6 @@ jobs:
       - name: Commit changes
         working-directory: ./gitops
         run: |
-          git config user.name "GitHub Actions Bot" && \
-          git config user.email "<>" && \
-          git add --all
-          git commit -m "chore: update ${{ inputs.application_name }} image tag as ${{ inputs.image_tag }}" && \
-          git push origin main
-        continue-on-error: true
-
-      - name: Commit changes
-        working-directory: ./gitops
-        run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
 
