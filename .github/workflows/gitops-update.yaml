@@ -112,3 +112,19 @@ jobs:
           git commit -m "chore: update ${{ inputs.application_name }} image tag as ${{ inputs.image_tag }}" && \
           git push origin main
         continue-on-error: true
+
+      - name: Commit changes
+        working-directory: ./gitops
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+
+          if [[ -n $(git status --porcelain) ]]; then
+            git add --all
+            git commit -m "chore: update ${{ inputs.application_name }} image tag as ${{ inputs.image_tag }}"
+            git push origin main
+            echo "✅ Changes committed and pushed."
+          else
+            echo "⚠️ No changes to commit. Skipping."
+          fi
+        continue-on-error: true
