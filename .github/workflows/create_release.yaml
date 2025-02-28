@@ -115,42 +115,6 @@ jobs:
         run: |
           echo "Environment is not QA, PROD, or HOTFIX. Failing the workflow."
           exit 1
-
-  parallel-create-release:
-    name: parallel create release
-    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
-    needs: [initial_setting]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix: ${{ fromJson(needs.initial_setting.outputs.matrix) }}
-        
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          repository: cloud-development-team/${{ matrix.repo }}
-          ref: refs/heads/${{ needs.initial_setting.outputs.target_branch }}
-          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-
-      - name: Create Github Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
-        with:
-          tag_name: ${{needs.initial_setting.outputs.project}}${{ inputs.release_version }}
-          release_name: ${{needs.initial_setting.outputs.project}}${{ inputs.release_version }}
-          repo: ${{ matrix.repo }}
-          commitish: ${{ needs.initial_setting.outputs.target_branch }}
-          body: |
-            🤖 This release was created by ${{ github.event.sender.login }}.
-            - More information about this release can be found in Jira Release. 🔍
-            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
-            - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
-
-      - name: Github Release Result
-        run: |
-          echo "🔍 Check the release results"
-          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}" 
     
   dmpro:
     if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'CPD' }}
@@ -167,7 +131,7 @@ jobs:
 
   sightmind-backend:
     if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
-    needs: [initial_setting, parallel-create-release]
+    needs: [initial_setting]
     name: SightMind Backend Deploy
     uses: ./.github/workflows/deploy-sightmind-backend.yaml
     with:
@@ -180,7 +144,7 @@ jobs:
 
   sightmind-fronted:
     if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
-    needs: [initial_setting, parallel-create-release]
+    needs: [initial_setting]
     name: SightMind Frontend Deploy
     uses: ./.github/workflows/deploy-sightmind-frontend.yaml
     with:
@@ -193,7 +157,7 @@ jobs:
 
   auth-backend:
     if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
-    needs: [initial_setting, parallel-create-release]
+    needs: [initial_setting]
     name: AuthZ Backend Deploy
     uses: ./.github/workflows/deploy-authZ-backend.yaml
     with:
@@ -237,3 +201,39 @@ jobs:
         run: |
           echo "🔍 Check the release results"
           echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ needs.initial_setting.outputs.dm_be_repo }}/releases/tag/${{ inputs.release_version }}"
+
+  parallel-create-release:
+    name: parallel create release
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
+    needs: [initial_setting, sightmind-backend, sightmind-fronted, auth-backend]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.initial_setting.outputs.matrix) }}
+        
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: cloud-development-team/${{ matrix.repo }}
+          ref: refs/heads/${{ needs.initial_setting.outputs.target_branch }}
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Create Github Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+        with:
+          tag_name: ${{needs.initial_setting.outputs.project}}${{ inputs.release_version }}
+          release_name: ${{needs.initial_setting.outputs.project}}${{ inputs.release_version }}
+          repo: ${{ matrix.repo }}
+          commitish: ${{ needs.initial_setting.outputs.target_branch }}
+          body: |
+            🤖 This release was created by ${{ github.event.sender.login }}.
+            - More information about this release can be found in Jira Release. 🔍
+            - Jira Release should have a release like this version. If the same version is not there, contact DevOps. 📞
+            - [Jira Release Link](https://hanwhavision.atlassian.net/projects/${{ inputs.jira_key }}?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page)
+
+      - name: Github Release Result
+        run: |
+          echo "🔍 Check the release results"
+          echo "🔗 Github Release Link : https://github.com/cloud-development-team/${{ matrix.repo }}/releases/tag/${{ inputs.release_version }}" 
