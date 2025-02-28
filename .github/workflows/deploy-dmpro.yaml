@@ -83,6 +83,7 @@ jobs:
 #             upgrade:
 #               - './lambda/firmware_upgrade/**'
 
+
   qa-deploy-lambda-email:
     name: DMPro QA Lambda Deploy Email
     if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.lambda-detect-changes.outputs.email == 'true'}}
