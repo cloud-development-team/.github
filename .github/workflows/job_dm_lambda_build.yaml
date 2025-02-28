@@ -183,6 +183,9 @@ jobs:
           else
             env_path="./env/prod.json"
           fi
+
+          pwd
+          ls -al
  
           #NEW_VARS=$(jq -r 'to_entries | map("\(.key)=\(.value)") | join(", ")' $env_path)
           NEW_VARS=$(jq -r 'to_entries | map("\(.key)=\"\(.value)\"") | join(", ")' $env_path)
