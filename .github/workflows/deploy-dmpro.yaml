@@ -295,7 +295,7 @@ jobs:
     needs: lambda-detect-changes
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     with:
-      branch: release
+      branch: production
       repo: ${{ inputs.dm_lambda_repo }}         
       working_dir: ./lambda/firmware_email
       node_versions: "['20.14.0']"
@@ -303,12 +303,12 @@ jobs:
     secrets: inherit
 
   prod-deploy-lambda-upgrade:
-    name: DMPro QA Lambda Deploy Upgrade
+    name: DMPro PROD Lambda Deploy Upgrade
     if: ${{ (inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' || inputs.release_env == 'PROD/BOTH') && needs.lambda-detect-changes.outputs.upgrade == 'true' }}
     needs: lambda-detect-changes
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     with:
-      branch: release
+      branch: production
       repo: ${{ inputs.dm_lambda_repo }}         
       working_dir: ./lambda/firmware_upgrade
       node_versions: "['20.14.0']"
