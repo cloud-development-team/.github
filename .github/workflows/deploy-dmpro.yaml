@@ -1,63 +1,63 @@
-# name: DMPro Deploy
-# run-name: DMPro Deploy - ${{ inputs.release_env }}
+name: DMPro Deploy
+run-name: DMPro Deploy - ${{ inputs.release_env }}
 
-# permissions: write-all
+permissions: write-all
 
-# on:
-#   workflow_call:
-#     inputs:
-#       release_version:
-#         description: 'Release Version'
-#         required: true
-#         default: ""
-#         type: string
-#       release_env:
-#         description: 'Release environment'
-#         required: true
-#         default: ""
-#         type: string
-#       release_repo:
-#         description: 'Release Repository'
-#         required: true
-#         default: ""
-#         type: string                  
-#       qa_aws_account:
-#         required: false
-#         description: "dmpro qa aws account id"
-#         type: string
-#         default: "027903527077"
-#       prod_aws_account:
-#         required: false
-#         description: "dmpro prod aws account id"
-#         type: string
-#         default: "390418701413"
-#       qa_fe_bucket:
-#         required: false
-#         description: "dmpro qa FE bucket"
-#         type: string
-#         default: "dmpro013-static-qa-ue1-001"
-#       prod_fe_bucket:
-#         required: false
-#         description: "dmpro prod FE bucket"
-#         type: string
-#         default: "dmpro013-static-prod-ue1-001"
-#       prod_cf_distribution_id:
-#         required: false
-#         description: "prod_cf_distribution_id"
-#         type: string
-#         default: "E216BRXBWEUM5Z"
-#       dm_sw_ver:
-#         required: true
-#         description: "major or minor"
-#         type: string
-#         default: "major"
-#       dm_lambda_repo:
-#         required: false
-#         description: "lambda deploy"
-#         type: string
-#         default: "lambda"
+on:
+  workflow_call:
+    inputs:
+      release_version:
+        description: 'Release Version'
+        required: true
+        default: ""
+        type: string
+      release_env:
+        description: 'Release environment'
+        required: true
+        default: ""
+        type: string
+      release_repo:
+        description: 'Release Repository'
+        required: true
+        default: ""
+        type: string                  
+      qa_aws_account:
+        required: false
+        description: "dmpro qa aws account id"
+        type: string
+        default: "027903527077"
+      prod_aws_account:
+        required: false
+        description: "dmpro prod aws account id"
+        type: string
+        default: "390418701413"
+      qa_fe_bucket:
+        required: false
+        description: "dmpro qa FE bucket"
+        type: string
+        default: "dmpro013-static-qa-ue1-001"
+      prod_fe_bucket:
+        required: false
+        description: "dmpro prod FE bucket"
+        type: string
+        default: "dmpro013-static-prod-ue1-001"
+      prod_cf_distribution_id:
+        required: false
+        description: "prod_cf_distribution_id"
+        type: string
+        default: "E216BRXBWEUM5Z"
+      dm_sw_ver:
+        required: true
+        description: "major or minor"
+        type: string
+        default: "major"
+      dm_lambda_repo:
+        required: false
+        description: "lambda deploy"
+        type: string
+        default: "lambda"
 
-# jobs:
+jobs:
 #   lambda-detect-changes:
 #     name: Detect DMPro lambda Changes
 #     runs-on: ubuntu-latest
