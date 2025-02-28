@@ -134,6 +134,7 @@ jobs:
           aws-region: ${{ needs.init.outputs.region }}
 
       - name: Get environment variables from s3
+        if: inputs.target_branch != 'production'
         run: |
           # Define the bucket and prefixes
           bucket="${{ needs.init.outputs.env_bucket }}"
