@@ -116,6 +116,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        if: ${{ inputs.branch == 'release' }}
         with:
           repository: cloud-development-team/${{ inputs.repo }}
           ref: refs/heads/release #release브랜치만 있음
@@ -180,12 +181,11 @@ jobs:
           if [[ "${{ inputs.branch }}" == 'release' ]]; then
             env_path="./env/qa.json"
           else
-            env_path="./env/prod.json"
+            env_path=".lambda/env/prod.json"
           fi
 
           pwd
-          ls -al
- 
+          
           #NEW_VARS=$(jq -r 'to_entries | map("\(.key)=\(.value)") | join(", ")' $env_path)
           NEW_VARS=$(jq -r 'to_entries | map("\(.key)=\"\(.value)\"") | join(", ")' $env_path)
 
