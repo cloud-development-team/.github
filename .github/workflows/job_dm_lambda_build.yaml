@@ -180,7 +180,7 @@ jobs:
           if [[ "${{ inputs.branch }}" == 'release' ]]; then
             env_path="./env/qa.json"
           else
-            env_path="./lambda/env/prod.json"
+            env_path="./env/prod.json"
           fi
 
           pwd

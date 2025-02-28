@@ -58,7 +58,7 @@ on:
         default: "lambda"
 
 jobs:
-  qa-lambda-detect-changes:
+  lambda-detect-changes:
     name: Detect DMPro lambda Changes
     runs-on: ubuntu-latest
     outputs:
@@ -85,8 +85,8 @@ jobs:
 
   qa-deploy-lambda-email:
     name: DMPro QA Lambda Deploy Email
-    if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.qa-lambda-detect-changes.outputs.email == 'true'}}
-    needs: qa-lambda-detect-changes
+    if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.lambda-detect-changes.outputs.email == 'true'}}
+    needs: lambda-detect-changes
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     with:
       branch: release
@@ -98,8 +98,8 @@ jobs:
 
   qa-deploy-lambda-upgrade:
     name: DMPro QA Lambda Deploy Upgrade
-    if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.qa-lambda-detect-changes.outputs.upgrade == 'true' }}
-    needs: qa-lambda-detect-changes
+    if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.lambda-detect-changes.outputs.upgrade == 'true' }}
+    needs: lambda-detect-changes
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     with:
       branch: release
@@ -288,14 +288,31 @@ jobs:
           git push origin main
         continue-on-error: true
 
-  prod-deploy-lambda:
-    name: DMPro PROD Lambda Deploy
-    if: ${{ inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' }}
+
+  prod-deploy-lambda-email:
+    name: DMPro PROD Lambda Deploy Email
+    if: ${{ (inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' || inputs.release_env == 'PROD/BOTH') && needs.lambda-detect-changes.outputs.email == 'true'}}
+    needs: lambda-detect-changes
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     with:
-      branch: production
-      repo: ${{ inputs.dm_lambda_repo }}     
-      service: "both"
+      branch: release
+      repo: ${{ inputs.dm_lambda_repo }}         
+      working_dir: ./lambda/firmware_email
+      node_versions: "['20.14.0']"
+      service: "email"
+    secrets: inherit
+
+  prod-deploy-lambda-upgrade:
+    name: DMPro QA Lambda Deploy Upgrade
+    if: ${{ (inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' || inputs.release_env == 'PROD/BOTH') && needs.lambda-detect-changes.outputs.upgrade == 'true' }}
+    needs: lambda-detect-changes
+    uses: ./.github/workflows/job_dm_lambda_build.yaml
+    with:
+      branch: release
+      repo: ${{ inputs.dm_lambda_repo }}         
+      working_dir: ./lambda/firmware_upgrade
+      node_versions: "['20.14.0']"
+      service: "upgrade"
     secrets: inherit
 
   prod-deploy:
