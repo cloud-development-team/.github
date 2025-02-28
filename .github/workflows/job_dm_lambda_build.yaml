@@ -84,7 +84,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout other repository
-        if: ${{ inputs.branch == 'release' }}
         uses: actions/checkout@v3
         with:
           repository: cloud-development-team/${{ inputs.repo }} 
