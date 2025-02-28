@@ -58,36 +58,36 @@ on:
         default: "lambda"
 
 jobs:
-#   lambda-detect-changes:
-#     name: Detect DMPro lambda Changes
-#     runs-on: ubuntu-latest
-#     outputs:
-#       email: ${{ steps.filter.outputs.email }}
-#       upgrade: ${{ steps.filter.outputs.upgrade }}
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v3
-#         with:
-#           repository: cloud-development-team/${{ inputs.dm_lambda_repo }}
-#           ref: refs/heads/release #release브랜치만 있음
-#           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+  lambda-detect-changes:
+    name: Detect DMPro lambda Changes
+    runs-on: ubuntu-latest
+    outputs:
+      email: ${{ steps.filter.outputs.email }}
+      upgrade: ${{ steps.filter.outputs.upgrade }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: cloud-development-team/${{ inputs.dm_lambda_repo }}
+          ref: refs/heads/release #release브랜치만 있음
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
-#       - name: Filtering changed repository
-#         uses: dorny/paths-filter@v2
-#         id: filter
-#         with:
-#           base: ${{ github.ref_name }}
-#           filters: |
-#             email:
-#               - './lambda/firmware_email/**'
-#             upgrade:
-#               - './lambda/firmware_upgrade/**'
+      - name: Filtering changed repository
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          base: ${{ github.ref_name }}
+          filters: |
+            email:
+              - './lambda/firmware_email/**'
+            upgrade:
+              - './lambda/firmware_upgrade/**'
 
 
   qa-deploy-lambda-email:
     name: DMPro QA Lambda Deploy Email
-    #if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.lambda-detect-changes.outputs.email == 'true'}}
-    #needs: lambda-detect-changes
+    if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.lambda-detect-changes.outputs.email == 'true'}}
+    needs: lambda-detect-changes
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     with:
       branch: release
@@ -99,8 +99,8 @@ jobs:
 
   qa-deploy-lambda-upgrade:
     name: DMPro QA Lambda Deploy Upgrade
-    #if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.lambda-detect-changes.outputs.upgrade == 'true' }}
-    #needs: lambda-detect-changes
+    if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.lambda-detect-changes.outputs.upgrade == 'true' }}
+    needs: lambda-detect-changes
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     with:
       branch: release
@@ -110,293 +110,293 @@ jobs:
       service: "upgrade"
     secrets: inherit
 
-#   qa-deploy: #inside gitops repo
-#     name: DMPro QA Deploy
-#     if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH'}} 
-#     environment: main
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v4
-#         with:
-#           fetch-depth: 0
-#           repository: cloud-development-team/${{ inputs.release_repo }}
-#           ref: refs/heads/main
-#           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+  qa-deploy: #inside gitops repo
+    name: DMPro QA Deploy
+    if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH'}} 
+    environment: main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/${{ inputs.release_repo }}
+          ref: refs/heads/main
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
           
-#       - name: Update version.json information
-#         uses: mikefarah/yq@v4.34.2
-#         with:
-#           cmd: |
-#             yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
-#             yq -i '.["JiraReleaseVersion"].["SWVersion"] = "${{ inputs.dm_sw_ver }}"' qa_version.json     
+      - name: Update version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' qa_version.json     
+            yq -i '.["JiraReleaseVersion"].["SWVersion"] = "${{ inputs.dm_sw_ver }}"' qa_version.json     
 
-#       - name: Get Time
-#         id: time
-#         uses: nanzm/get-time-action@master
-#         with:
-#           timeZone: UTC-9
-#           format: 'YYYY-MM-DD HH:mm:ss'
+      - name: Get Time
+        id: time
+        uses: nanzm/get-time-action@master
+        with:
+          timeZone: UTC-9
+          format: 'YYYY-MM-DD HH:mm:ss'
 
-#       - name: Update Release date to version.json information
-#         uses: mikefarah/yq@v4.34.2
-#         with:
-#           cmd: |
-#             yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
+      - name: Update Release date to version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
 
-#       - name: Install yq
-#         run: |
-#           wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
-#           chmod +x /usr/local/bin/yq
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
 
-#       - name: Deploy
-#         run: |
-#           while IFS= read -r line; do
-#             if [[ "${line:0:1}" != " " ]]; then
-#               service_name=$(echo "$line" | awk -F':' '{print $1}')
-#             elif [[ $line == *"image-tag"* ]]; then
-#               image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
-#               yq -i '
-#                 .image.tag = "'$image_tag'"
-#               ' ./$service_name/env/qa.yaml || true
-#             fi
-#           done < qa_version.yaml
+      - name: Deploy
+        run: |
+          while IFS= read -r line; do
+            if [[ "${line:0:1}" != " " ]]; then
+              service_name=$(echo "$line" | awk -F':' '{print $1}')
+            elif [[ $line == *"image-tag"* ]]; then
+              image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
+              yq -i '
+                .image.tag = "'$image_tag'"
+              ' ./$service_name/env/qa.yaml || true
+            fi
+          done < qa_version.yaml
 
-#       - name: Copy the qa_version.yaml file to prod_version.yaml file.
-#         run: |
-#           pwd
-#           ls -la
-#           cp qa_version.yaml prod_version.yaml
-#           cp qa_version.json prod_version.json
+      - name: Copy the qa_version.yaml file to prod_version.yaml file.
+        run: |
+          pwd
+          ls -la
+          cp qa_version.yaml prod_version.yaml
+          cp qa_version.json prod_version.json
 
-#       - name: Commit changes
-#         run: |
-#           git config user.name "GitHub Actions Bot" && \
-#           git config user.email "<>" && \
-#           git add --all
-#           git commit -m "cd: deploy qa for ${{ inputs.release_version }}" && \
-#           git push origin main
-#         continue-on-error: true
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "cd: deploy qa for ${{ inputs.release_version }}" && \
+          git push origin main
+        continue-on-error: true
 
-#       - name: Configure AWS credentials
-#         uses: aws-actions/configure-aws-credentials@v4
-#         with:
-#           role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
-#           role-session-name: GitHub-Actions-Assume
-#           aws-region: us-east-1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+          role-session-name: GitHub-Actions-Assume
+          aws-region: us-east-1
       
-#       # Static file upload
-#       - name: Static File Update - QA
-#         run: |
-#           export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
-#           $(aws sts assume-role \
-#           --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution \
-#           --role-session-name GitHubPipeline \
-#           --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
-#           --output text))
+      # Static file upload
+      - name: Static File Update - QA
+        run: |
+          export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+          $(aws sts assume-role \
+          --role-arn arn:aws:iam::${{ inputs.qa_aws_account }}:role/AWSControlTowerExecution \
+          --role-session-name GitHubPipeline \
+          --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+          --output text))
 
-#           sync_and_invalidate() {
-#             local build_path=$1
-#             local target_path=$2
-#             local distribution_id=$3
+          sync_and_invalidate() {
+            local build_path=$1
+            local target_path=$2
+            local distribution_id=$3
 
-#             if aws s3 ls "$build_path" ; then
-#               # Sync S3 Bucket
-#               aws s3 sync "$build_path" "$target_path" --delete
-#               aws s3 rm "$build_path" --recursive
+            if aws s3 ls "$build_path" ; then
+              # Sync S3 Bucket
+              aws s3 sync "$build_path" "$target_path" --delete
+              aws s3 rm "$build_path" --recursive
 
-#               # Setting CloudFront
-#               aws cloudfront create-invalidation --distribution-id "$distribution_id" --paths "/*"
-#             else
-#               echo "S3 path $build_path does not exist. Skipping sync and invalidation."
-#             fi
-#           }
+              # Setting CloudFront
+              aws cloudfront create-invalidation --distribution-id "$distribution_id" --paths "/*"
+            else
+              echo "S3 path $build_path does not exist. Skipping sync and invalidation."
+            fi
+          }
 
-#           if [[ "${{ inputs.release_env }}" == 'QA' ]]; then
-#             sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/major/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/major/out" "EOTSDFTM2NPH0"
-#           elif [[ "${{ inputs.release_env }}" == 'QA/MINOR' ]]; then
-#             sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/minor/out" "E391GJR6NFDKFC"
-#           elif [[ "${{ inputs.release_env }}" == 'QA/BOTH' ]]; then
-#             sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/major/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/major/out" "EOTSDFTM2NPH0"
-#             sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/minor/out" "E391GJR6NFDKFC"
-#           fi
+          if [[ "${{ inputs.release_env }}" == 'QA' ]]; then
+            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/major/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/major/out" "EOTSDFTM2NPH0"
+          elif [[ "${{ inputs.release_env }}" == 'QA/MINOR' ]]; then
+            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/minor/out" "E391GJR6NFDKFC"
+          elif [[ "${{ inputs.release_env }}" == 'QA/BOTH' ]]; then
+            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/major/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/major/out" "EOTSDFTM2NPH0"
+            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/minor/out" "E391GJR6NFDKFC"
+          fi
 
-#   #1.0.2 SSR 구성
-#   hotfix-deploy:
-#     name: DMPro HOTFIX Deploy
-#     if: ${{ inputs.release_env == 'HOTFIX' }}
-#     environment: main
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v4
-#         with:
-#           fetch-depth: 0
-#           repository: cloud-development-team/${{ inputs.release_repo }}
-#           ref: refs/heads/main
-#           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+  #1.0.2 SSR 구성
+  hotfix-deploy:
+    name: DMPro HOTFIX Deploy
+    if: ${{ inputs.release_env == 'HOTFIX' }}
+    environment: main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/${{ inputs.release_repo }}
+          ref: refs/heads/main
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
           
-#       - name: Update version.json information
-#         uses: mikefarah/yq@v4.34.2
-#         with:
-#           cmd: |
-#             yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' hotfix_version.json     
+      - name: Update version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' hotfix_version.json     
 
-#       - name: Get Time
-#         id: time
-#         uses: nanzm/get-time-action@master
-#         with:
-#           timeZone: UTC-9
-#           format: 'YYYY-MM-DD HH:mm:ss'
+      - name: Get Time
+        id: time
+        uses: nanzm/get-time-action@master
+        with:
+          timeZone: UTC-9
+          format: 'YYYY-MM-DD HH:mm:ss'
 
-#       - name: Update Release date to version.json information
-#         uses: mikefarah/yq@v4.34.2
-#         with:
-#           cmd: |
-#             yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' hotfix_version.json
+      - name: Update Release date to version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' hotfix_version.json
 
-#       - name: Install yq
-#         run: |
-#           wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
-#           chmod +x /usr/local/bin/yq
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
 
-#       - name: Deploy
-#         run: |
-#           while IFS= read -r line; do
-#             if [[ "${line:0:1}" != " " ]]; then
-#               service_name=$(echo "$line" | awk -F':' '{print $1}')
-#             elif [[ $line == *"image-tag"* ]]; then
-#               image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
-#               yq -i '
-#                 .image.tag = "'$image_tag'"
-#               ' ./$service_name/env/hotfix.yaml || true
-#             fi
-#           done < hotfix_version.yaml
+      - name: Deploy
+        run: |
+          while IFS= read -r line; do
+            if [[ "${line:0:1}" != " " ]]; then
+              service_name=$(echo "$line" | awk -F':' '{print $1}')
+            elif [[ $line == *"image-tag"* ]]; then
+              image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
+              yq -i '
+                .image.tag = "'$image_tag'"
+              ' ./$service_name/env/hotfix.yaml || true
+            fi
+          done < hotfix_version.yaml
 
-#       - name: Copy the hotfix_version.yaml file to prod_version.yaml file.
-#         run: |
-#           pwd
-#           ls -la
-#           cp hotfix_version.yaml prod_version1.yaml
-#           cp hotfix_version.json prod_version1.json
+      - name: Copy the hotfix_version.yaml file to prod_version.yaml file.
+        run: |
+          pwd
+          ls -la
+          cp hotfix_version.yaml prod_version1.yaml
+          cp hotfix_version.json prod_version1.json
 
-#       - name: Commit changes
-#         run: |
-#           git config user.name "GitHub Actions Bot" && \
-#           git config user.email "<>" && \
-#           git add --all
-#           git commit -m "cd: deploy hotfix for ${{ inputs.release_version }}" && \
-#           git push origin main
-#         continue-on-error: true
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "cd: deploy hotfix for ${{ inputs.release_version }}" && \
+          git push origin main
+        continue-on-error: true
 
 
-#   prod-deploy-lambda-email:
-#     name: DMPro PROD Lambda Deploy Email
-#     if: ${{ (inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' || inputs.release_env == 'PROD/BOTH') && needs.lambda-detect-changes.outputs.email == 'true'}}
-#     needs: lambda-detect-changes
-#     uses: ./.github/workflows/job_dm_lambda_build.yaml
-#     with:
-#       branch: production
-#       repo: ${{ inputs.dm_lambda_repo }}         
-#       working_dir: ./lambda/firmware_email
-#       node_versions: "['20.14.0']"
-#       service: "email"
-#     secrets: inherit
+  prod-deploy-lambda-email:
+    name: DMPro PROD Lambda Deploy Email
+    if: ${{ (inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' || inputs.release_env == 'PROD/BOTH') && needs.lambda-detect-changes.outputs.email == 'true'}}
+    needs: lambda-detect-changes
+    uses: ./.github/workflows/job_dm_lambda_build.yaml
+    with:
+      branch: production
+      repo: ${{ inputs.dm_lambda_repo }}         
+      working_dir: ./lambda/firmware_email
+      node_versions: "['20.14.0']"
+      service: "email"
+    secrets: inherit
 
-#   prod-deploy-lambda-upgrade:
-#     name: DMPro PROD Lambda Deploy Upgrade
-#     if: ${{ (inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' || inputs.release_env == 'PROD/BOTH') && needs.lambda-detect-changes.outputs.upgrade == 'true' }}
-#     needs: lambda-detect-changes
-#     uses: ./.github/workflows/job_dm_lambda_build.yaml
-#     with:
-#       branch: production
-#       repo: ${{ inputs.dm_lambda_repo }}         
-#       working_dir: ./lambda/firmware_upgrade
-#       node_versions: "['20.14.0']"
-#       service: "upgrade"
-#     secrets: inherit
+  prod-deploy-lambda-upgrade:
+    name: DMPro PROD Lambda Deploy Upgrade
+    if: ${{ (inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' || inputs.release_env == 'PROD/BOTH') && needs.lambda-detect-changes.outputs.upgrade == 'true' }}
+    needs: lambda-detect-changes
+    uses: ./.github/workflows/job_dm_lambda_build.yaml
+    with:
+      branch: production
+      repo: ${{ inputs.dm_lambda_repo }}         
+      working_dir: ./lambda/firmware_upgrade
+      node_versions: "['20.14.0']"
+      service: "upgrade"
+    secrets: inherit
 
-#   prod-deploy:
-#     name: DMPro PROD Deploy
-#     if: ${{ inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' }} 
-#     environment: main
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v4
-#         with:
-#           fetch-depth: 0
-#           repository: cloud-development-team/${{ inputs.release_repo }}
-#           ref: refs/heads/main
-#           token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+  prod-deploy:
+    name: DMPro PROD Deploy
+    if: ${{ inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' }} 
+    environment: main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/${{ inputs.release_repo }}
+          ref: refs/heads/main
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
           
-#       - name: Update version.json information
-#         uses: mikefarah/yq@v4.34.2
-#         with:
-#           cmd: |
-#             yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' prod_version.json     
-#             yq -i '.["JiraReleaseVersion"].["SWVersion"] = "${{ inputs.dm_sw_ver }}"' prod_version.json
+      - name: Update version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ inputs.release_version }}"' prod_version.json     
+            yq -i '.["JiraReleaseVersion"].["SWVersion"] = "${{ inputs.dm_sw_ver }}"' prod_version.json
 
-#       - name: Get Time
-#         id: time
-#         uses: nanzm/get-time-action@master
-#         with:
-#           timeZone: UTC-9
-#           format: 'YYYY-MM-DD HH:mm:ss'
+      - name: Get Time
+        id: time
+        uses: nanzm/get-time-action@master
+        with:
+          timeZone: UTC-9
+          format: 'YYYY-MM-DD HH:mm:ss'
 
-#       - name: Update Release date to version.json information
-#         uses: mikefarah/yq@v4.34.2
-#         with:
-#           cmd: |
-#             yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' prod_version.json
+      - name: Update Release date to version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' prod_version.json
 
-#       - name: Install yq
-#         run: |
-#           wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
-#           chmod +x /usr/local/bin/yq
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
 
-#       - name: Deploy
-#         run: |
-#           while IFS= read -r line; do
-#             if [[ "${line:0:1}" != " " ]]; then
-#               service_name=$(echo "$line" | awk -F':' '{print $1}')
-#             elif [[ $line == *"image-tag"* ]]; then
-#               image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
-#               yq -i '
-#                 .image.tag = "'$image_tag'"
-#               ' ./$service_name/env/prod.yaml || true
-#             fi
-#           done < prod_version.yaml
+      - name: Deploy
+        run: |
+          while IFS= read -r line; do
+            if [[ "${line:0:1}" != " " ]]; then
+              service_name=$(echo "$line" | awk -F':' '{print $1}')
+            elif [[ $line == *"image-tag"* ]]; then
+              image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
+              yq -i '
+                .image.tag = "'$image_tag'"
+              ' ./$service_name/env/prod.yaml || true
+            fi
+          done < prod_version.yaml
 
-#       - name: Commit changes
-#         run: |
-#           git config user.name "GitHub Actions Bot" && \
-#           git config user.email "<>" && \
-#           git add --all
-#           git commit -m "cd: deploy dmpro prod version ${{ inputs.release_version }}" && \
-#           git push origin main
-#         continue-on-error: true
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "cd: deploy dmpro prod version ${{ inputs.release_version }}" && \
+          git push origin main
+        continue-on-error: true
       
-#       # Login To HVC_Admin_Automation for Deploy
-#       - name: Configure AWS credentials
-#         uses: aws-actions/configure-aws-credentials@v4
-#         with:
-#           role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
-#           role-session-name: GitHub-Actions-Assume
-#           aws-region: us-east-1
+      # Login To HVC_Admin_Automation for Deploy
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::619268642609:role/HVC-admin-automation
+          role-session-name: GitHub-Actions-Assume
+          aws-region: us-east-1
 
-#       # Static file upload
-#       - name: Static File Update - PROD
-#         run: |
-#           export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
-#           $(aws sts assume-role \
-#           --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution \
-#           --role-session-name GitHubPipeline \
-#           --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
-#           --output text))
+      # Static file upload
+      - name: Static File Update - PROD
+        run: |
+          export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+          $(aws sts assume-role \
+          --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution \
+          --role-session-name GitHubPipeline \
+          --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+          --output text))
 
-#           aws s3 sync s3://${{ inputs.qa_fe_bucket }}/${{ inputs.dm_sw_ver }}/out ./out
-#           aws s3 sync ./out s3://${{ inputs.prod_fe_bucket }}/out --delete
+          aws s3 sync s3://${{ inputs.qa_fe_bucket }}/${{ inputs.dm_sw_ver }}/out ./out
+          aws s3 sync ./out s3://${{ inputs.prod_fe_bucket }}/out --delete
 
-#           # Setting CloudFront
-#           aws cloudfront create-invalidation --distribution-id ${{ inputs.prod_cf_distribution_id }} --paths "/*"
+          # Setting CloudFront
+          aws cloudfront create-invalidation --distribution-id ${{ inputs.prod_cf_distribution_id }} --paths "/*"
