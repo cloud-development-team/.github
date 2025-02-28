@@ -116,7 +116,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        if: ${{ inputs.branch == 'release' }}
         with:
           repository: cloud-development-team/${{ inputs.repo }}
           ref: refs/heads/release #release브랜치만 있음
