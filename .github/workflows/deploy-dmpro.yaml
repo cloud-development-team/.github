@@ -318,7 +318,6 @@ jobs:
   prod-deploy:
     name: DMPro PROD Deploy
     if: ${{ inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' }} 
-    needs: prod-deploy-lambda
     environment: main
     runs-on: ubuntu-latest
     steps:
