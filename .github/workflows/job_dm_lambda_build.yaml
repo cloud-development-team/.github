@@ -239,15 +239,21 @@ jobs:
             aws lambda publish-version --function-name $function_name --description "$VERSION" > /dev/null
 
           elif [[ "${{ inputs.branch }}" == 'production' ]]; then
-            aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/email/function.zip ./function-email.zip
-            aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/upgrade/function.zip ./function-up.zip
+            if ${{ inputs.service == 'email'}}; then
+              function_name=${{ needs.init.outputs.function_email }}
+            else
+              function_name=${{ needs.init.outputs.function_upgrade }}
+            fi
 
-            EMAILVERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key lambda-build/email/function.zip --query 'Metadata.version' --output text)
-            UPGRADEVERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key lambda-build/upgrade/function.zip --query 'Metadata.version' --output text)
+            aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/${{ inputs.service }}/function.zip ./function-${{ inputs.service }}.zip
+            #aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/upgrade/function.zip ./function-up.zip
 
-            aws lambda update-function-code --function-name ${{ needs.init.outputs.function_email }} --zip-file fileb://function-email.zip > /dev/null
+            VERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key lambda-build/${{ inputs.service }}/function.zip --query 'Metadata.version' --output text)
+            #UPGRADEVERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key lambda-build/upgrade/function.zip --query 'Metadata.version' --output text)
+
+            aws lambda update-function-code --function-name $function_name --zip-file fileb://function-${{ inputs.service }}.zip > /dev/null
               while true; do
-                STATUS=$(aws lambda get-function --function-name ${{ needs.init.outputs.function_email }} --query 'Configuration.[LastUpdateStatus]' --output text)
+                STATUS=$(aws lambda get-function --function-name $function_name --query 'Configuration.[LastUpdateStatus]' --output text)
                 if [ "$STATUS" == "Successful" ]; then
                   echo "Lambda update completed. Proceeding with version publishing."
                   break
@@ -256,23 +262,23 @@ jobs:
                   sleep 3
                 fi
               done
-            aws lambda publish-version --function-name ${{ needs.init.outputs.function_email }} --description "$EMAILVERSION" > /dev/null
+            aws lambda publish-version --function-name $function_name --description "$VERSION" > /dev/null
 
-            aws lambda update-function-code --function-name ${{ needs.init.outputs.function_upgrade }} --zip-file fileb://function-up.zip > /dev/null
-              while true; do
-                STATUS=$(aws lambda get-function --function-name ${{ needs.init.outputs.function_upgrade }} --query 'Configuration.[LastUpdateStatus]' --output text)
-                if [ "$STATUS" == "Successful" ]; then
-                  echo "Lambda update completed. Proceeding with version publishing."
-                  break
-                else
-                  echo "Update in progress. Waiting..."
-                  sleep 3
-                fi
-              done
-            aws lambda publish-version --function-name ${{ needs.init.outputs.function_upgrade }} --description "$UPGRADEVERSION" > /dev/null
+            # aws lambda update-function-code --function-name ${{ needs.init.outputs.function_upgrade }} --zip-file fileb://function-up.zip > /dev/null
+            #   while true; do
+            #     STATUS=$(aws lambda get-function --function-name ${{ needs.init.outputs.function_upgrade }} --query 'Configuration.[LastUpdateStatus]' --output text)
+            #     if [ "$STATUS" == "Successful" ]; then
+            #       echo "Lambda update completed. Proceeding with version publishing."
+            #       break
+            #     else
+            #       echo "Update in progress. Waiting..."
+            #       sleep 3
+            #     fi
+            #   done
+            # aws lambda publish-version --function-name ${{ needs.init.outputs.function_upgrade }} --description "$UPGRADEVERSION" > /dev/null
+            # aws s3 rm s3://${{ needs.init.outputs.bucket }}/lambda-build/email/function.zip
 
-            aws s3 rm s3://${{ needs.init.outputs.bucket }}/lambda-build/email/function.zip
-            aws s3 rm s3://${{ needs.init.outputs.bucket }}/lambda-build/upgrade/function.zip
+            aws s3 rm s3://${{ needs.init.outputs.bucket }}/lambda-build/${{ inputs.service }}/function.zip
           fi
 
   gitops-update-call-email:
