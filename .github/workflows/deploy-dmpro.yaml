@@ -45,7 +45,7 @@ on:
         required: false
         description: "prod_cf_distribution_id"
         type: string
-        default: "E216BRXBWEUM5Z"
+        default: "E15PGHBUR9J4EE"
       dm_sw_ver:
         required: true
         description: "major or minor"
@@ -213,12 +213,12 @@ jobs:
           }
 
           if [[ "${{ inputs.release_env }}" == 'QA' ]]; then
-            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/major/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/major/out" "EOTSDFTM2NPH0"
+            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/major/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/major/out" "EESFSOKQTN9WW"
           elif [[ "${{ inputs.release_env }}" == 'QA/MINOR' ]]; then
-            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/minor/out" "E391GJR6NFDKFC"
+            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/minor/out" "E32VCJC4FYWR6P"
           elif [[ "${{ inputs.release_env }}" == 'QA/BOTH' ]]; then
-            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/major/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/major/out" "EOTSDFTM2NPH0"
-            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/minor/out" "E391GJR6NFDKFC"
+            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/major/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/major/out" "EESFSOKQTN9WW"
+            sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/minor/out" "E32VCJC4FYWR6P"
           fi
 
   #1.0.2 SSR 구성
