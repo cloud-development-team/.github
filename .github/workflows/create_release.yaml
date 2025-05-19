@@ -215,7 +215,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: cloud-development-team/${{ matrix.repo }}
-          ref: refs/heads/${{ needs.initial_setting.outputs.target_branch }}
+          ref: refs/heads/release
           token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Create Github Release
@@ -226,7 +226,7 @@ jobs:
           tag_name: ${{needs.initial_setting.outputs.project}}${{ inputs.release_version }}
           release_name: ${{needs.initial_setting.outputs.project}}${{ inputs.release_version }}
           repo: ${{ matrix.repo }}
-          commitish: ${{ needs.initial_setting.outputs.target_branch }}
+          commitish: release
           body: |
             🤖 This release was created by ${{ github.event.sender.login }}.
             - More information about this release can be found in Jira Release. 🔍
