@@ -32,6 +32,7 @@ on:
           - dmpro-scheduler-producer
           - dmpro-updater-warranty
           - dmpro-authorization
+          - global-manager-log
       ANALYSIS_PATH:
         description: 'Target Path'
         required: true
