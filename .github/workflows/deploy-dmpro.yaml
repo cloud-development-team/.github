@@ -64,24 +64,60 @@ jobs:
     outputs:
       email: ${{ steps.filter.outputs.email }}
       upgrade: ${{ steps.filter.outputs.upgrade }}
+      syncw: ${{ steps.filter.outputs.syncw }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          repository: cloud-development-team/${{ inputs.dm_lambda_repo }}
-          ref: refs/heads/release #release브랜치만 있음
-          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+      - name: Clone dm_lambda_repo
+        run: |
+          git clone https://github.com/cloud-development-team/${{ inputs.dm_lambda_repo }} repo
+          cd repo
+          git fetch origin release
+          echo "REPO_SHA=$(git rev-parse origin/release)" >> $GITHUB_ENV
 
-      - name: Filtering changed repository
-        uses: dorny/paths-filter@v2
-        id: filter
-        with:
-          base: ${{ github.ref_name }}
-          filters: |
-            email:
-              - './lambda/firmware_email/**'
-            upgrade:
-              - './lambda/firmware_upgrade/**'
+      - name: Compare changes
+        id: set
+        run: |
+          cd repo
+          git checkout origin/release
+
+          # fetch previous commit from release for comparison
+          git fetch origin release --depth=2
+          PREV=$(git rev-list origin/release | tail -n 1)
+
+          # default false
+          echo "email=false" >> $GITHUB_OUTPUT
+          echo "upgrade=false" >> $GITHUB_OUTPUT
+          echo "syncw=false" >> $GITHUB_OUTPUT
+          
+
+          if ! git diff --quiet $PREV HEAD -- lambda/firmware_email; then
+            echo "email=true" >> $GITHUB_OUTPUT
+          fi
+
+          if ! git diff --quiet $PREV HEAD -- lambda/firmware_upgrade; then
+            echo "upgrade=true" >> $GITHUB_OUTPUT
+          fi
+
+          if ! git diff --quiet $PREV HEAD -- lambda/warranty_sync; then
+            echo "syncw=true" >> $GITHUB_OUTPUT
+          fi
+
+      # - name: Checkout
+      #   uses: actions/checkout@v3
+      #   with:
+      #     repository: cloud-development-team/${{ inputs.dm_lambda_repo }}
+      #     ref: refs/heads/release #release브랜치만 있음
+      #     token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+
+      # - name: Filtering changed repository
+      #   uses: dorny/paths-filter@v2
+      #   id: filter
+      #   with:
+      #     base: ${{ github.ref_name }}
+      #     filters: |
+      #       email:
+      #         - './lambda/firmware_email/**'
+      #       upgrade:
+      #         - './lambda/firmware_upgrade/**'
 
 
   qa-deploy-lambda-email:
@@ -108,6 +144,19 @@ jobs:
       working_dir: ./lambda/firmware_upgrade
       node_versions: "['20.14.0']"
       service: "upgrade"
+    secrets: inherit
+
+  qa-deploy-lambda-syncw:
+    name: DMPro QA Lambda Deploy SyncW
+    if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && needs.lambda-detect-changes.outputs.syncw == 'true' }}
+    needs: lambda-detect-changes
+    uses: ./.github/workflows/job_dm_lambda_build.yaml
+    with:
+      branch: release
+      repo: ${{ inputs.dm_lambda_repo }}         
+      working_dir: ./lambda/warranty_sync
+      node_versions: "['20.14.0']"
+      service: "syncw"
     secrets: inherit
 
   qa-deploy: #inside gitops repo

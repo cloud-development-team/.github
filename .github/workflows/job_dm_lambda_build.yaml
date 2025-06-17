@@ -54,6 +54,7 @@ jobs:
       function_name: ${{ steps.set_env.outputs.function_name }}
       function_email: ${{ steps.set_env.outputs.function_email }}
       function_upgrade: ${{ steps.set_env.outputs.function_upgrade }}
+      function_syncw: ${{ steps.set_env.outputs.function_syncw }}
 
     steps:
       - name: set env
@@ -64,8 +65,11 @@ jobs:
           if ${{ inputs.service == 'email'}}; then
             function_name=${{ vars.FUNCTION_EMAIL }}
             echo $function_name
-          else
+          elif ${{ inputs.service == 'upgrade'}}; then
             function_name=${{ vars.FUNCTION_UPGRADE }}
+            echo $function_name
+          elif ${{ inputs.service == 'syncw'}}; then
+            function_name=${{ vars.FUNCTION_SYNCW }}
             echo $function_name
           fi
 
@@ -76,6 +80,7 @@ jobs:
           echo "function_name=$function_name" >> $GITHUB_OUTPUT
           echo "function_email=${{ vars.FUNCTION_EMAIL }}" >> $GITHUB_OUTPUT
           echo "function_upgrade=${{ vars.FUNCTION_UPGRADE }}" >> $GITHUB_OUTPUT
+          echo "function_syncw=${{ vars.FUNCTION_SYNCW }}" >> $GITHUB_OUTPUT
 
   versioning: 
     name: Lambda Versioning
@@ -97,12 +102,11 @@ jobs:
         id: version
         uses: paulhatch/semantic-version@v5.4.0
         with:
-          major_pattern: "(MAJOR)"
-          minor_pattern: "(MINOR)"
-          version_format: ${{ inputs.branch == 'release' && 'v${major}.${minor}.${patch}' || 'dev${major}.${minor}.${patch}' }}
           change_path: "."
-          bump_each_commit: true
-          search_commit_body: true
+          namespace: ${{ inputs.service }}
+          tag_prefix: "v"
+          version_format: "${{ inputs.service}}${major}.${minor}.${patch}"
+          bump_each_commit: true     
 
   npm-build:
     name: Node Build And Lambda Deploy
@@ -173,8 +177,10 @@ jobs:
 
           if [ "${{ inputs.service }}" == "email" ]; then
             function_name=${{ needs.init.outputs.function_email }}
-          else
+          elif [ "${{ inputs.service }}" == "upgrade" ]; then
             function_name=${{ needs.init.outputs.function_upgrade }}
+          elif [ "${{ inputs.service }}" == "syncw" ]; then
+            function_name=${{ needs.init.outputs.function_syncw }}
           fi
 
           if [[ "${{ inputs.branch }}" == 'release' ]]; then
@@ -217,8 +223,10 @@ jobs:
           if [[ "${{ inputs.branch }}" == 'release' ]]; then
             if ${{ inputs.service == 'email'}}; then
               function_name=${{ needs.init.outputs.function_email }}
-            else
+            elif ${{ inputs.service == 'upgrade'}}; then
               function_name=${{ needs.init.outputs.function_upgrade }}
+            elif ${{ inputs.service == 'syncw'}}; then
+              function_name=${{ needs.init.outputs.function_syncw }}
             fi
 
             VERSION=${{ needs.versioning.outputs.version }}
@@ -241,8 +249,10 @@ jobs:
           elif [[ "${{ inputs.branch }}" == 'production' ]]; then
             if ${{ inputs.service == 'email'}}; then
               function_name=${{ needs.init.outputs.function_email }}
-            else
+            elif ${{ inputs.service == 'upgrade'}}; then
               function_name=${{ needs.init.outputs.function_upgrade }}
+            elif ${{ inputs.service == 'syncw'}}; then
+              function_name=${{ needs.init.outputs.function_syncw }}
             fi
 
             aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/${{ inputs.service }}/function.zip ./function-${{ inputs.service }}.zip
@@ -263,20 +273,6 @@ jobs:
                 fi
               done
             aws lambda publish-version --function-name $function_name --description "$VERSION" > /dev/null
-
-            # aws lambda update-function-code --function-name ${{ needs.init.outputs.function_upgrade }} --zip-file fileb://function-up.zip > /dev/null
-            #   while true; do
-            #     STATUS=$(aws lambda get-function --function-name ${{ needs.init.outputs.function_upgrade }} --query 'Configuration.[LastUpdateStatus]' --output text)
-            #     if [ "$STATUS" == "Successful" ]; then
-            #       echo "Lambda update completed. Proceeding with version publishing."
-            #       break
-            #     else
-            #       echo "Update in progress. Waiting..."
-            #       sleep 3
-            #     fi
-            #   done
-            # aws lambda publish-version --function-name ${{ needs.init.outputs.function_upgrade }} --description "$UPGRADEVERSION" > /dev/null
-            # aws s3 rm s3://${{ needs.init.outputs.bucket }}/lambda-build/email/function.zip
 
             aws s3 rm s3://${{ needs.init.outputs.bucket }}/lambda-build/${{ inputs.service }}/function.zip
           fi
@@ -305,6 +301,19 @@ jobs:
       yaml_path: "no_eks"
       json_path: ${{ needs.init.outputs.json_path }}
       application_name: "dmpro-agent-scheduler-upgrade"
+    secrets: inherit
+  
+  gitops-update-call-syncw:
+    needs: [init, versioning, npm-build]
+    if: ${{ inputs.service == 'syncw' }}
+    uses: cloud-development-team/.github/.github/workflows/gitops-update.yaml@main
+    with:
+      repository_name: "cloud-development-team/dmpro-gitops"
+      image_name: "no_eks"
+      image_tag: ${{ needs.versioning.outputs.version }}-syncw
+      yaml_path: "no_eks"
+      json_path: ${{ needs.init.outputs.json_path }}
+      application_name: "dmpro-agent-scheduler-syncw"
     secrets: inherit
 
   create-release:
