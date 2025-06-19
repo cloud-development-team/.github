@@ -57,7 +57,7 @@ on:
 
 env:
   CODEFREEZE: ${{ secrets.CODEFREEZE }}
-  GH_PAT_AUTOMATION: ${{ secrets.GH_PAT_AUTOMATION_SEMANTIC_RELEASE }}
+  AUTOMATION_GH_MANAGEPACKAGE_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
 
 jobs:
@@ -105,6 +105,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          registry-url: https://npm.pkg.github.com
+          scope: '@cloud-development-team'
 
       - name: Setup pnpm
         if: inputs.target_branch != 'production'
@@ -120,17 +122,12 @@ jobs:
       #     path: ./node_modules
       #     key: ${{ inputs.target_branch }}-${{ runner.os }}-node${{ matrix.node-version }}-${{ hashFiles('./pnpm-lock.yaml') }}
 
-      - name: Login to NPM
-        if: inputs.target_branch != 'production'
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          npm install -g npm-cli-login 
-          npm-cli-login -u hvc_automation -p ${{ env.GH_PAT_AUTOMATION }} -e sdo016-prod@hanwha.com -r https://npm.pkg.github.com -s @backend-sw-development-team4 
-
       - name: Install dependencies
         if: inputs.target_branch != 'production' && steps.pnpm-cache.outputs.cache-hit != 'true'
         working-directory: ${{ inputs.working_dir }}
         run: pnpm install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
 
       - name: Build
         if: inputs.target_branch != 'production'
