@@ -83,7 +83,6 @@ jobs:
       - name: Compare changes
         id: set
         run: |
-          cd repo
           git checkout origin/release
 
           # fetch previous commit from release for comparison
