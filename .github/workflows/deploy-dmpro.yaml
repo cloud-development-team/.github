@@ -66,12 +66,19 @@ jobs:
       upgrade: ${{ steps.filter.outputs.upgrade }}
       syncw: ${{ steps.filter.outputs.syncw }}
     steps:
-      - name: Clone dm_lambda_repo
-        run: |
-          git clone https://github.com/cloud-development-team/${{ inputs.dm_lambda_repo }} repo
-          cd repo
-          git fetch origin release
-          echo "REPO_SHA=$(git rev-parse origin/release)" >> $GITHUB_ENV
+      - name: CheckoutAdd commentMore actions
+        uses: actions/checkout@v3
+        with:
+          repository: cloud-development-team/${{ inputs.dm_lambda_repo }}
+          ref: refs/heads/release 
+          token: ${{ secrets.AUTOMATION_GH_MANAGEPACKAGE_TOKEN }}
+
+      # - name: Clone dm_lambda_repo
+      #   run: |
+      #     git clone https://github.com/cloud-development-team/${{ inputs.dm_lambda_repo }} repo
+      #     cd repo
+      #     git fetch origin release
+      #     echo "REPO_SHA=$(git rev-parse origin/release)" >> $GITHUB_ENV
 
       - name: Compare changes
         id: set
