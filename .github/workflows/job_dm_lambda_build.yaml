@@ -182,7 +182,7 @@ jobs:
 
           aws lambda update-function-configuration \
                 --function-name $function_name \
-                --environment "Variables={$NEW_VARS}"
+                --environment "Variables={$NEW_VARS}" > /dev/null
 
           while true; do
             STATUS=$(aws lambda get-function --function-name $function_name --query 'Configuration.[LastUpdateStatus]' --output text)
@@ -222,7 +222,7 @@ jobs:
           --zip-file fileb://modules.zip \
           --compatible-runtimes nodejs20.x \
           --query 'LayerVersionArn' \
-          --output text)
+          --output text) 
 
           var_new_layer_ver=$(echo "$var_new_layer_arn" | awk -F: '{print $8}')
           var_new_layer_prefix=$(echo "$var_new_layer_arn" | awk -F: '{OFS=":"; print $1,$2,$3,$4,$5,$6,$7}')
@@ -240,7 +240,7 @@ jobs:
           echo "$var_new_layers"
           read -a layer_array <<< "$var_new_layers"
           echo "Layer Array: ${layer_array[@]}"
-          aws lambda update-function-configuration --function-name $function_name --layers "${layer_array[@]}"
+          aws lambda update-function-configuration --function-name $function_name --layers "${layer_array[@]}" > /dev/null
           while true; do
             STATUS=$(aws lambda get-function --function-name $function_name --query 'Configuration.[LastUpdateStatus]' --output text)
             echo "Current STATUS: $STATUS"
