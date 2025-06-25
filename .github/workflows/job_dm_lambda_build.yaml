@@ -35,6 +35,16 @@ on:
         description: "service selector"
         type: string
         default: "none"
+      range:
+        required: false
+        description: "Range of the release"
+        type: string
+        default: "false"
+      layer_name:
+        required: false
+        description: "Layer name for the lambda function"
+        type: string
+        default: "none"
 
 env:
   CODEFREEZE: ${{ secrets.CODEFREEZE }}
@@ -52,9 +62,6 @@ jobs:
       json_path: ${{ steps.set_env.outputs.json_path }}
       bucket: ${{ steps.set_env.outputs.bucket }}
       function_name: ${{ steps.set_env.outputs.function_name }}
-      function_email: ${{ steps.set_env.outputs.function_email }}
-      function_upgrade: ${{ steps.set_env.outputs.function_upgrade }}
-      function_syncw: ${{ steps.set_env.outputs.function_syncw }}
 
     steps:
       - name: set env
@@ -62,25 +69,18 @@ jobs:
         run: |
           echo "set env"
          
-          if ${{ inputs.service == 'email'}}; then
-            function_name=${{ vars.FUNCTION_EMAIL }}
-            echo $function_name
-          elif ${{ inputs.service == 'upgrade'}}; then
-            function_name=${{ vars.FUNCTION_UPGRADE }}
-            echo $function_name
-          elif ${{ inputs.service == 'syncw'}}; then
-            function_name=${{ vars.FUNCTION_SYNCW }}
-            echo $function_name
+          if [ "${{ inputs.service }}" == "email" ]; then
+            echo "function_name=${{ vars.FUNCTION_EMAIL }}" >> $GITHUB_OUTPUT
+          elif [ "${{ inputs.service }}" == "upgrade" ]; then
+            echo "function_name=${{ vars.FUNCTION_UPGRADE }}" >> $GITHUB_OUTPUT
+          elif [ "${{ inputs.service }}" == "syncw" ]; then
+            echo "function_name=${{ vars.FUNCTION_SYNCW }}" >> $GITHUB_OUTPUT
           fi
 
           echo "region=${{ vars.REGION }}" >> $GITHUB_OUTPUT
           echo "account=${{ vars.ACCOUNT }}" >> $GITHUB_OUTPUT
           echo "json_path=${{ vars.JSONPATH }}" >> $GITHUB_OUTPUT
           echo "bucket=${{ vars.BUCKET }}" >> $GITHUB_OUTPUT
-          echo "function_name=$function_name" >> $GITHUB_OUTPUT
-          echo "function_email=${{ vars.FUNCTION_EMAIL }}" >> $GITHUB_OUTPUT
-          echo "function_upgrade=${{ vars.FUNCTION_UPGRADE }}" >> $GITHUB_OUTPUT
-          echo "function_syncw=${{ vars.FUNCTION_SYNCW }}" >> $GITHUB_OUTPUT
 
   versioning: 
     name: Lambda Versioning
@@ -159,12 +159,6 @@ jobs:
           role-session-name: GitHub-Actions-Assume
           aws-region: ${{ needs.init.outputs.region }}
 
-      - name: Zip build output
-        if: ${{ inputs.branch == 'release' }}
-        working-directory: ${{ inputs.working_dir }}
-        run: |
-          zip -qry function.zip ./dist
-
       - name: Lambda Environment Update
         working-directory: ${{ inputs.working_dir }}
         run: |
@@ -175,14 +169,6 @@ jobs:
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
-          if [ "${{ inputs.service }}" == "email" ]; then
-            function_name=${{ needs.init.outputs.function_email }}
-          elif [ "${{ inputs.service }}" == "upgrade" ]; then
-            function_name=${{ needs.init.outputs.function_upgrade }}
-          elif [ "${{ inputs.service }}" == "syncw" ]; then
-            function_name=${{ needs.init.outputs.function_syncw }}
-          fi
-
           if [[ "${{ inputs.branch }}" == 'release' ]]; then
             env_path="./env/qa.json"
           else
@@ -191,9 +177,8 @@ jobs:
 
           pwd
           
-          #NEW_VARS=$(jq -r 'to_entries | map("\(.key)=\(.value)") | join(", ")' $env_path)
           NEW_VARS=$(jq -r 'to_entries | map("\(.key)=\"\(.value)\"") | join(", ")' $env_path)
-
+          function_name=${{ needs.init.outputs.function_name }}
 
           aws lambda update-function-configuration \
                 --function-name $function_name \
@@ -210,6 +195,63 @@ jobs:
               sleep 3
             fi
           done
+      
+      - name: Zip build output
+        if: ${{ inputs.branch == 'release' }}
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          zip -qry function.zip ./dist
+
+      - name: Layer Update(if needed)
+        if: ${{ inputs.range == 'layer' }}
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          identity=$(aws sts assume-role --role-arn arn:aws:iam::${{ needs.init.outputs.account }}:role/AWSControlTowerExecution --role-session-name AWS)
+          export AWS_ACCESS_KEY_ID=$(echo "$identity" | grep -o '"AccessKeyId": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
+          export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
+
+          function_name=${{ needs.init.outputs.function_name }}
+          
+          mkdir -p nodejs && cp -r node_modules nodejs/
+          zip -r modules.zip nodejs
+
+          var_new_layer_arn=$(aws lambda publish-layer-version \
+          --layer-name ${{ inputs.layer_name }} \
+          --description "Updated Layer ${{ inputs.sem_ver }}" \
+          --zip-file fileb://modules.zip \
+          --compatible-runtimes nodejs20.x \
+          --query 'LayerVersionArn' \
+          --output text)
+
+          var_new_layer_ver=$(echo "$var_new_layer_arn" | awk -F: '{print $8}')
+          var_new_layer_prefix=$(echo "$var_new_layer_arn" | awk -F: '{OFS=":"; print $1,$2,$3,$4,$5,$6,$7}')
+
+          echo "$var_new_layer_ver"
+
+          var_current_layers=$(aws lambda get-function-configuration \
+          --function-name $function_name \
+          --query 'Layers[*].Arn' \
+          --output text)
+
+          var_new_layers=$(echo "$var_current_layers" | sed -E "s|${var_new_layer_prefix}:[0-9]+|${var_new_layer_prefix}:${var_new_layer_ver}|")
+          var_new_layers=$(echo "$var_new_layers" | tr '\t' ' ')
+
+          echo "$var_new_layers"
+          read -a layer_array <<< "$var_new_layers"
+          echo "Layer Array: ${layer_array[@]}"
+          aws lambda update-function-configuration --function-name $function_name --layers "${layer_array[@]}"
+          while true; do
+            STATUS=$(aws lambda get-function --function-name $function_name --query 'Configuration.[LastUpdateStatus]' --output text)
+            echo "Current STATUS: $STATUS"
+            if [ "$STATUS" == "Successful" ]; then
+              echo "Lambda update completed. Proceeding with version publishing."
+              break
+            else
+              echo "Update in progress. Waiting..."
+              sleep 3
+            fi
+          done
 
       - name: Lambda Code Update
         working-directory: ${{ inputs.working_dir }}
@@ -220,15 +262,9 @@ jobs:
           export AWS_SECRET_ACCESS_KEY=$(echo "$identity" | grep -o '"SecretAccessKey": "[^"]*' | awk -F'"' '{print $4}')
           export AWS_SESSION_TOKEN=$(echo "$identity" | grep -o '"SessionToken": "[^"]*' | awk -F'"' '{print $4}')
 
-          if [[ "${{ inputs.branch }}" == 'release' ]]; then
-            if ${{ inputs.service == 'email'}}; then
-              function_name=${{ needs.init.outputs.function_email }}
-            elif ${{ inputs.service == 'upgrade'}}; then
-              function_name=${{ needs.init.outputs.function_upgrade }}
-            elif ${{ inputs.service == 'syncw'}}; then
-              function_name=${{ needs.init.outputs.function_syncw }}
-            fi
+          function_name=${{ needs.init.outputs.function_name }}
 
+          if [[ "${{ inputs.branch }}" == 'release' ]]; then
             VERSION=${{ needs.versioning.outputs.version }}
             echo "Current function_name: ${{ needs.init.outputs.function_name }}"
             aws s3 cp function.zip s3://${{ needs.init.outputs.bucket }}/lambda-build/${{ inputs.service }}/function.zip --metadata version=$VERSION
@@ -247,20 +283,10 @@ jobs:
             aws lambda publish-version --function-name $function_name --description "$VERSION" > /dev/null
 
           elif [[ "${{ inputs.branch }}" == 'production' ]]; then
-            if ${{ inputs.service == 'email'}}; then
-              function_name=${{ needs.init.outputs.function_email }}
-            elif ${{ inputs.service == 'upgrade'}}; then
-              function_name=${{ needs.init.outputs.function_upgrade }}
-            elif ${{ inputs.service == 'syncw'}}; then
-              function_name=${{ needs.init.outputs.function_syncw }}
-            fi
-
             aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/${{ inputs.service }}/function.zip ./function-${{ inputs.service }}.zip
-            #aws s3 cp s3://${{ needs.init.outputs.bucket }}/lambda-build/upgrade/function.zip ./function-up.zip
-
+            
             VERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key lambda-build/${{ inputs.service }}/function.zip --query 'Metadata.version' --output text)
-            #UPGRADEVERSION=$(aws s3api head-object --bucket ${{ needs.init.outputs.bucket }} --key lambda-build/upgrade/function.zip --query 'Metadata.version' --output text)
-
+    
             aws lambda update-function-code --function-name $function_name --zip-file fileb://function-${{ inputs.service }}.zip > /dev/null
               while true; do
                 STATUS=$(aws lambda get-function --function-name $function_name --query 'Configuration.[LastUpdateStatus]' --output text)
