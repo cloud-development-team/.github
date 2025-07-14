@@ -342,7 +342,8 @@ jobs:
 
   prod-deploy-lambda-email:
     name: DMPro PROD Lambda Deploy Email
-    if: ${{ (inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' || inputs.release_env == 'PROD/BOTH') }}
+    needs: [lambda-detect-changes]
+    if: ${{ (inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' || inputs.release_env == 'PROD/BOTH') && (needs.lambda-detect-changes.outputs.email == 'true' || needs.lambda-detect-changes.outputs.email == 'layer')}}
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     with:
       branch: production
@@ -350,11 +351,14 @@ jobs:
       working_dir: ./lambda/firmware_email
       node_versions: "['20.14.0']"
       service: "email"
+      layer_name: "module_email"
+      range: ${{ needs.lambda-detect-changes.outputs.email }}
     secrets: inherit
 
   prod-deploy-lambda-upgrade:
     name: DMPro PROD Lambda Deploy Upgrade
-    if: ${{ (inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' || inputs.release_env == 'PROD/BOTH') }}
+    needs: [lambda-detect-changes]
+    if: ${{ (inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' || inputs.release_env == 'PROD/BOTH') && (needs.lambda-detect-changes.outputs.upgrade == 'true' || needs.lambda-detect-changes.outputs.upgrade == 'layer') }}
     uses: ./.github/workflows/job_dm_lambda_build.yaml
     with:
       branch: production
@@ -362,6 +366,8 @@ jobs:
       working_dir: ./lambda/firmware_upgrade
       node_versions: "['20.14.0']"
       service: "upgrade"
+      layer_name: "module"
+      range: ${{ needs.lambda-detect-changes.outputs.upgrade }}
     secrets: inherit
 
   prod-deploy:
@@ -403,18 +409,18 @@ jobs:
           wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
 
-      - name: Deploy
-        run: |
-          while IFS= read -r line; do
-            if [[ "${line:0:1}" != " " ]]; then
-              service_name=$(echo "$line" | awk -F':' '{print $1}')
-            elif [[ $line == *"image-tag"* ]]; then
-              image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
-              yq -i '
-                .image.tag = "'$image_tag'"
-              ' ./$service_name/env/prod.yaml || true
-            fi
-          done < prod_version.yaml
+      # - name: Deploy
+      #   run: |
+      #     while IFS= read -r line; do
+      #       if [[ "${line:0:1}" != " " ]]; then
+      #         service_name=$(echo "$line" | awk -F':' '{print $1}')
+      #       elif [[ $line == *"image-tag"* ]]; then
+      #         image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
+      #         yq -i '
+      #           .image.tag = "'$image_tag'"
+      #         ' ./$service_name/env/prod.yaml || true
+      #       fi
+      #     done < prod_version.yaml
 
       - name: Commit changes
         run: |
