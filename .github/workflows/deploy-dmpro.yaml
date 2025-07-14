@@ -352,7 +352,8 @@ jobs:
       node_versions: "['20.14.0']"
       service: "email"
       layer_name: "module_email"
-      range: ${{ needs.lambda-detect-changes.outputs.email }}
+      #range: ${{ needs.lambda-detect-changes.outputs.email }}
+      range: "true"
     secrets: inherit
 
   prod-deploy-lambda-upgrade:
@@ -367,7 +368,8 @@ jobs:
       node_versions: "['20.14.0']"
       service: "upgrade"
       layer_name: "module"
-      range: ${{ needs.lambda-detect-changes.outputs.upgrade }}
+      #range: ${{ needs.lambda-detect-changes.outputs.upgrade }}
+      range: "true"
     secrets: inherit
 
   prod-deploy:
@@ -439,18 +441,18 @@ jobs:
           role-session-name: GitHub-Actions-Assume
           aws-region: us-east-1
 
-      # Static file upload
-      - name: Static File Update - PROD
-        run: |
-          export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
-          $(aws sts assume-role \
-          --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution \
-          --role-session-name GitHubPipeline \
-          --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
-          --output text))
+      # # Static file upload
+      # - name: Static File Update - PROD
+      #   run: |
+      #     export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+      #     $(aws sts assume-role \
+      #     --role-arn arn:aws:iam::${{ inputs.prod_aws_account }}:role/AWSControlTowerExecution \
+      #     --role-session-name GitHubPipeline \
+      #     --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+      #     --output text))
 
-          aws s3 sync s3://${{ inputs.qa_fe_bucket }}/${{ inputs.dm_sw_ver }}/out ./out
-          aws s3 sync ./out s3://${{ inputs.prod_fe_bucket }}/out --delete
+      #     aws s3 sync s3://${{ inputs.qa_fe_bucket }}/${{ inputs.dm_sw_ver }}/out ./out
+      #     aws s3 sync ./out s3://${{ inputs.prod_fe_bucket }}/out --delete
 
-          # Setting CloudFront
-          aws cloudfront create-invalidation --distribution-id ${{ inputs.prod_cf_distribution_id }} --paths "/*"
+      #     # Setting CloudFront
+      #     aws cloudfront create-invalidation --distribution-id ${{ inputs.prod_cf_distribution_id }} --paths "/*"
