@@ -33,6 +33,7 @@ on:
           - dmpro-updater-warranty
           - dmpro-authorization
           - global-manager-log
+          - hv-ui-components
       ANALYSIS_PATH:
         description: 'Target Path'
         required: true
