@@ -351,7 +351,7 @@ jobs:
       working_dir: ./lambda/firmware_email
       node_versions: "['20.14.0']"
       service: "email"
-      layer_name: "module_email"
+      layer_name: " " #운영은 module_fwemail 으로 되어있음
       #range: ${{ needs.lambda-detect-changes.outputs.email }}
       range: "true"
     secrets: inherit
@@ -369,6 +369,22 @@ jobs:
       service: "upgrade"
       layer_name: "module"
       #range: ${{ needs.lambda-detect-changes.outputs.upgrade }}
+      range: "true"
+    secrets: inherit
+  
+  prod-deploy-lambda-syncw:
+    name: DMPro PROD Lambda Deploy SyncW
+    needs: [lambda-detect-changes]
+    if: ${{ (inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' || inputs.release_env == 'PROD/BOTH') && (needs.lambda-detect-changes.outputs.syncw == 'true' || needs.lambda-detect-changes.outputs.syncw == 'layer') }}
+    uses: ./.github/workflows/job_dm_lambda_build.yaml
+    with:
+      branch: production
+      repo: ${{ inputs.dm_lambda_repo }}         
+      working_dir: ./lambda/warranty_sync
+      node_versions: "['20.14.0']"
+      service: "syncw"
+      layer_name: "module_syncwarranty"
+      #range: ${{ needs.lambda-detect-changes.outputs.syncw }}
       range: "true"
     secrets: inherit
 
