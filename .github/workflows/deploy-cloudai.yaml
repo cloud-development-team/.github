@@ -83,10 +83,10 @@ jobs:
       # --- 빌드 아티팩트 생성
       - name: Package artifact
         run: |
-          tar --zstd -cpf - .venv | aws s3 cp - s3://cf-templates-1mi1dpu8pr165-us-east-1/venv/${{ inputs.release_version }}/venv.tar.zst 
+          tar --zstd -cpf - .venv | aws s3 cp - s3://duclo-build-q-ue1/venv/${{ inputs.release_version }}/venv.tar.zst 
       - name: Copy source files to S3
         run: |
-          aws s3 sync . s3://cf-templates-1mi1dpu8pr165-us-east-1/src/${{ inputs.release_version }}/ \
+          aws s3 sync . s3://duclo-build-q-ue1/src/${{ inputs.release_version }}/ \
             --delete \
             --exact-timestamps \
             --exclude ".git/*" \
@@ -96,7 +96,8 @@ jobs:
             --exclude "README.md" \
             --exclude "appspec.yml" \
             --exclude "codedeploy/*" \
-            --exclude ".venv/*" 
+            --exclude ".venv/*" \
+            --exclude ".gitignore" 
   make-zip-file:
     runs-on: ubuntu-latest
     needs: build-and-deploy-to-s3
@@ -109,15 +110,15 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::619071312308:role/role-wc025-prod-github-ci
+          role-to-assume: arn:aws:iam::224792116665:role/role-duclo-qa-github-ci
           role-session-name: GitHub-Actions-Assume
           aws-region: us-east-1
       - name: zip file 
         run: |
-          sync_script="aws s3 sync s3://cf-templates-1mi1dpu8pr165-us-east-1/src/${{ inputs.release_version }}/ ."
-          cp_script="aws s3 cp s3://cf-templates-1mi1dpu8pr165-us-east-1/venv/${{ inputs.release_version }}/venv.tar.zst - | tar --zstd --strip-components=1 -xpf -"
+          sync_script="aws s3 sync s3://duclo-build-q-ue1/cloudai/src/${{ inputs.release_version }}/ ."
+          cp_script="aws s3 cp s3://duclo-build-q-ue1/cloudai/venv/${{ inputs.release_version }}/venv.tar.zst - | tar --zstd --strip-components=1 -xpf -"
           sed -i "/^aws s3 cp/ s@.*@${cp_script}@" ./codedeploy/deploy.sh
           sed -i "/^aws s3 sync/ s@.*@${sync_script}@" ./codedeploy/deploy.sh
           cat ./codedeploy/deploy.sh
-          zip -r oncloud-wiseai-service.zip appspec.yml codedeploy
-          aws s3 cp oncloud-wiseai-service.zip s3://cf-templates-1mi1dpu8pr165-us-east-1/wiseai-service/oncloud-wiseai-service.zip --metadata version=${{ inputs.release_version }}
+          zip -r deploy.zip appspec.yml codedeploy
+          aws s3 cp deploy.zip s3://duclo-build-q-ue1/cloudai/deploy.zip --metadata version=${{ inputs.release_version }}
