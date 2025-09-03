@@ -47,7 +47,7 @@ jobs:
       - name: Repository List
         id: set_env
         run: |
-          if [ "${{ inputs.jira_key }}" == "CPD" ] || [ "${{ inputs.jira_key }}" == "OPS" ]; then
+          if [ "${{ inputs.jira_key }}" == "CPD" ]; then
             dm_be_repo=dmpro-gitops
             dm_lambda_repo=dmpro-agent-scheduler
             
@@ -77,7 +77,14 @@ jobs:
             echo "frontend_repo=$frontend_repo" >> $GITHUB_OUTPUT
             echo "auth_repo=$auth_repo" >> $GITHUB_OUTPUT
             echo "matrix=$matrix" >> $GITHUB_OUTPUT
+
+          elif [ "${{ inputs.jira_key }}" == "OPS" ]; then
+            echo "set env for test(CPE)"
+            cloudai_backend_repo=oncloud-cloudai-test
+            project=cpe
+            echo "backend_repo=$cloudai_backend_repo" >> $GITHUB_OUTPUT
           fi
+
 
           if grep -q "QA" <<< "${{ inputs.release_env }}"; then
             target_branch=release
@@ -151,6 +158,19 @@ jobs:
       release_env: ${{ inputs.release_env }}
       frontend_repo: ${{ needs.initial_setting.outputs.frontend_repo }}
       target_branch: ${{ needs.initial_setting.outputs.target_branch }}
+      release_version: ${{ needs.initial_setting.outputs.release_version }}
+      target_version: ${{ needs.initial_setting.outputs.target_version }}
+    secrets: inherit  
+  
+  cloudai:
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'OPS' }}
+    needs: [initial_setting]
+    name: CloudAI Backend Deploy
+    uses: ./.github/workflows/deploy-cloudai.yaml
+    with:
+      release_env: ${{ inputs.release_env }}
+      backend_repo: ${{ needs.initial_setting.outputs.backend_repo }}
+      target_branch: main
       release_version: ${{ needs.initial_setting.outputs.release_version }}
       target_version: ${{ needs.initial_setting.outputs.target_version }}
     secrets: inherit  
