@@ -116,8 +116,8 @@ jobs:
         run: |
           sync_script="aws s3 sync s3://cf-templates-1mi1dpu8pr165-us-east-1/src/${{ inputs.release_version }}/ ."
           cp_script="aws s3 cp s3://cf-templates-1mi1dpu8pr165-us-east-1/venv/${{ inputs.release_version }}/venv.tar.zst - | tar --zstd --strip-components=1 -xpf -"
-          sed -i "/^aws s3 cp/ s|.*|${cp_script}|" ./codedeploy/deploy.sh
-          sed -i "/^aws s3 sync/ s|.*|${sync_script}|" ./codedeploy/deploy.sh
+          sed -i "/^aws s3 cp/ s@.*@${cp_script}@" ./codedeploy/deploy.sh
+          sed -i "/^aws s3 sync/ s@.*@${sync_script}@" ./codedeploy/deploy.sh
           cat ./codedeploy/deploy.sh
           zip -r oncloud-wiseai-service.zip appspec.yml codedeploy
           aws s3 cp oncloud-wiseai-service.zip s3://cf-templates-1mi1dpu8pr165-us-east-1/wiseai-service/oncloud-wiseai-service.zip --metadata version=${{ inputs.release_version }}
