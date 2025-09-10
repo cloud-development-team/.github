@@ -165,7 +165,7 @@ jobs:
     secrets: inherit  
   
   cloudai:
-    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'OPS' && needs.initial_setting.outputs.project == 'cloudai' }}
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'STARSCREAM' }}
     needs: [initial_setting]
     name: CloudAI Backend Deploy
     uses: ./.github/workflows/deploy-cloudai.yaml
