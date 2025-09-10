@@ -106,8 +106,8 @@ jobs:
           aws-region: us-east-1
       - name: zip file 
         run: |
-          sync_script="aws s3 sync s3://duclo-build-q-ue1/cloudai/src/${{ inputs.release_version }}/ ."
-          cp_script="aws s3 cp s3://duclo-build-q-ue1/cloudai/venv/${{ inputs.release_version }}/venv.tar.zst - | tar --zstd --strip-components=1 -xpf -"
+          sync_script="aws s3 sync s3://duclo-build-q-ue1/src/${{ inputs.release_version }}/ ."
+          cp_script="aws s3 cp s3://duclo-build-q-ue1/venv/${{ inputs.release_version }}/venv.tar.zst - | tar --zstd --strip-components=1 -xpf -"
           sed -i "/^aws s3 cp/ s@.*@${cp_script}@" ./codedeploy/deploy.sh
           sed -i "/^aws s3 sync/ s@.*@${sync_script}@" ./codedeploy/deploy.sh
           cat ./codedeploy/deploy.sh
