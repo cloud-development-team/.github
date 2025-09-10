@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: duclo/oncloud-wiseai-service
-          ref: refs/heads/develop
+          ref: refs/heads/main
           token: ${{ secrets.DUCLO_GH_MANAGEPACKAGE_TOKEN }}
 
       # --- Python 3.12 설치 (deadsnakes PPA 사용)
