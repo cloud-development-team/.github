@@ -48,7 +48,7 @@ jobs:
     
       - name: Copy source files from S3
         run: |
-          aws s3 cp s3://duclo-build-q-ue1/src/${{ inputs.target_version }}/ .
+          aws s3 sync s3://duclo-build-q-ue1/src/${{ inputs.target_version }}/ .
 
       - name: ReConfigure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -84,7 +84,7 @@ jobs:
           aws-region: us-east-1
       - name: Copy source files from S3
         run: |
-          aws s3 sync venv.tar.zst s3://wc025-build-p-ue1/venv/${{ inputs.release_version }}/venv.tar.zst
+          aws s3 cp venv.tar.zst s3://wc025-build-p-ue1/venv/${{ inputs.release_version }}/venv.tar.zst
 
 
   make-zip-file:
