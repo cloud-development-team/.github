@@ -47,7 +47,7 @@ jobs:
     secrets: inherit
   build-and-deploy-to-s3-prod:
     name: Build and push artifact to s3(PROD)
-    if: ${{ inputs.target_branch == 'prodction' }}
+    if: ${{ inputs.target_branch == 'production' }}
     uses: ./.github/workflows/job_cloudai_prod_deploy.yaml
     with:
       release_env: ${{ inputs.release_env }}
