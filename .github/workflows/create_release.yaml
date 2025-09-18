@@ -111,7 +111,7 @@ jobs:
             target_branch=null
           fi
 
-          if [ "${{ inputs.jira_key }}" == "CPE" ]; then
+          if [ "${{ inputs.jira_key }}" == "OPS" ]; then
             if grep -q "CloudAI" <<<"${{ inputs.release_version }}"; then
               echo "set env for CloudAI"
               cloudai_backend_repo=oncloud-wiseai-service
