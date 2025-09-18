@@ -26,6 +26,11 @@ on:
           required: true
           default: ""
           type: string
+      target_version:
+          description: 'Target Version'
+          required: false
+          default: ""
+          type: string
 
 
 
@@ -39,4 +44,14 @@ jobs:
       release_env: ${{ inputs.release_env }}
       backend_repo: ${{ inputs.backend_repo }}
       release_version: ${{ inputs.release_version }}
+    secrets: inherit
+  build-and-deploy-to-s3-prod:
+    name: Build and push artifact to s3(PROD)
+    if: ${{ inputs.target_branch == 'prodction' }}
+    uses: ./.github/workflows/job_cloudai_prod_deploy.yaml
+    with:
+      release_env: ${{ inputs.release_env }}
+      backend_repo: ${{ inputs.backend_repo }}
+      release_version: ${{ inputs.release_version }}
+      target_version: ${{ inputs.target_version }}
     secrets: inherit
