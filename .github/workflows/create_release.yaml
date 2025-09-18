@@ -121,7 +121,7 @@ jobs:
 
               if grep -q "PROD" <<< "${{ inputs.release_env }}"; then
                 target_branch=production
-                target_version=$(echo "${{ inputs.release_version }}" | cut -d ',' -f2)
+                target_version=$(echo "${{ inputs.release_env }}" | cut -d ',' -f2)
               elif grep -q "QA" <<< "${{ inputs.release_env }}"; then
                 target_branch=release
                 target_version=major
