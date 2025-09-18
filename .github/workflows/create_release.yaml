@@ -78,13 +78,6 @@ jobs:
             echo "auth_repo=$auth_repo" >> $GITHUB_OUTPUT
             echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
-          elif [ "${{ inputs.jira_key }}" == "STARSCREAM" ]; then
-            if grep -q "CloudAI" <<<"${{ inputs.release_version }}"; then
-              echo "set env for CloudAI"
-              cloudai_backend_repo=oncloud-wiseai-service
-              project=cloudai
-              echo "backend_repo=$cloudai_backend_repo" >> $GITHUB_OUTPUT
-            fi
           fi
 
 
@@ -111,7 +104,7 @@ jobs:
             target_branch=null
           fi
 
-          if [ "${{ inputs.jira_key }}" == "OPS" ]; then
+          if [ "${{ inputs.jira_key }}" == "STARSCREAM" ]; then
             if grep -q "CloudAI" <<< "${{ inputs.release_version }}"; then
               echo "set env for CloudAI"
               cloudai_backend_repo=oncloud-wiseai-service
