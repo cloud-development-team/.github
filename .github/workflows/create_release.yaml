@@ -112,7 +112,7 @@ jobs:
           fi
 
           if [ "${{ inputs.jira_key }}" == "OPS" ]; then
-            if grep -q "CloudAI" <<<"${{ inputs.release_version }}"; then
+            if grep -q "CloudAI" <<< "${{ inputs.release_version }}"; then
               echo "set env for CloudAI"
               cloudai_backend_repo=oncloud-wiseai-service
               project=cloudai
@@ -197,7 +197,7 @@ jobs:
   cloudai-test:
     if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'OPS' }}
     needs: [initial_setting]
-    name: CloudAI Backend Deploy
+    name: CloudAI Backend Deploy TEST
     uses: ./.github/workflows/deploy-cloudai.yaml
     with:
       release_env: ${{ inputs.release_env }}
