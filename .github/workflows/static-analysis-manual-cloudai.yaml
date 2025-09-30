@@ -1,9 +1,17 @@
 name: Manual Static Analysis
  
-run-name: '[${{inputs.STREAM}}] ${{ github.event.sender.login }} executed manual static analysis'
+run-name: '[CloudAI] ${{ github.event.sender.login }} executed manual static analysis'
 
 on:
   workflow_dispatch:
+    inputs:
+      STREAM:
+        description: 'Repository'
+        required: true
+        type: choice
+        default: 'Insert Repo Name'
+        options:  
+          - oncloud-wiseai-service
       ANALYSIS_PATH:
         description: 'Target Path'
         required: true
@@ -32,7 +40,7 @@ jobs:
       - name: Set STREAM Env
         id: set_env
         run: |
-          REPO_NAME=oncloud-wiseai-service
+          REPO_NAME=${{inputs.STREAM}}
           
 
           echo "REPO_NAME=$REPO_NAME" >> $GITHUB_OUTPUT
