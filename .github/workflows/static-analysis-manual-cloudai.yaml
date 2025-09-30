@@ -1,4 +1,4 @@
-name: Manual Static Analysis
+name: Manual Static Analysis CloudAI
  
 run-name: '[CloudAI] ${{ github.event.sender.login }} executed manual static analysis'
 
