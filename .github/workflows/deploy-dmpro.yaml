@@ -58,13 +58,17 @@ on:
         default: "lambda"
 
 jobs:
+##########################################
+######## Check Lambda Changes ############
+##########################################
   lambda-detect-changes:
     name: Detect DMPro lambda Changes
     runs-on: ubuntu-latest
     outputs:
-      email: ${{ steps.set.outputs.email }}
-      upgrade: ${{ steps.set.outputs.upgrade }}
-      syncw: ${{ steps.set.outputs.syncw }}
+      email: ${{ steps.set.outputs.firmware_email }}
+      upgrade: ${{ steps.set.outputs.firmware_upgrade }}
+      syncw: ${{ steps.set.outputs.warranty_sync }}
+      callback: ${{ steps.set.outputs.http_callback }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -81,40 +85,23 @@ jobs:
           git diff HEAD^1 HEAD^2 --name-only
 
           # default false
-          echo "email=true" >> $GITHUB_OUTPUT
-          echo "upgrade=false" >> $GITHUB_OUTPUT
-          echo "syncw=true" >> $GITHUB_OUTPUT
-          
-          if git diff HEAD^1 HEAD^2 --name-only | grep -q 'lambda/firmware_email/'; then
-            if git diff HEAD^1 HEAD^2 --name-only | grep -q  'lambda/firmware_email/package-lock.json'; then
-              echo "email=layer"
-              echo "email=layer" >> $GITHUB_OUTPUT
-            else
-              echo "email=true"
-              echo "email=true" >> $GITHUB_OUTPUT
-            fi
-          fi
+          echo "firmware_email=false" >> $GITHUB_OUTPUT
+          echo "firmware_upgrade=false" >> $GITHUB_OUTPUT
+          echo "warranty_sync=false" >> $GITHUB_OUTPUT
+          echo "http_callback=false" >> $GITHUB_OUTPUT
 
-          if git diff HEAD^1 HEAD^2 --name-only | grep -q 'lambda/firmware_upgrade/'; then
-            if git diff HEAD^1 HEAD^2 --name-only | grep -q 'lambda/firmware_upgrade/package-lock.json'; then
-              echo "upgrade=layer" 
-              echo "upgrade=layer" >> $GITHUB_OUTPUT
-            else
-              echo "upgrade=true"
-              echo "upgrade=true" >> $GITHUB_OUTPUT
+          for fn in firmware_email firmware_upgrade warranty_sync http_callback; do
+            if git diff HEAD^1 HEAD^2 --name-only | grep -q "lambda/$fn/"; then
+              if git diff HEAD^1 HEAD^2 --name-only | grep -q "lambda/$fn/package-lock.json"; then
+                echo "$fn=layer" | tee -a $GITHUB_OUTPUT
+              else
+                echo "$fn=true" | tee -a $GITHUB_OUTPUT
+              fi
             fi
-          fi
-
-          if git diff HEAD^1 HEAD^2 --name-only | grep -q 'lambda/warranty_sync/'; then
-            if git diff HEAD^1 HEAD^2 --name-only | grep -q 'lambda/warranty_sync/package-lock.json'; then
-              echo "syncw=layer"
-              echo "syncw=layer" >> $GITHUB_OUTPUT
-            else
-              echo "syncw=true"
-              echo "syncw=true" >> $GITHUB_OUTPUT
-            fi
-          fi    
-
+          done
+##########################################
+########## QA Lambda Deploy ##############
+##########################################          
   qa-deploy-lambda-email:
     name: DMPro QA Lambda Deploy Email
     needs: [lambda-detect-changes]
@@ -160,6 +147,23 @@ jobs:
       range: ${{ needs.lambda-detect-changes.outputs.syncw }}
     secrets: inherit
 
+  qa-deploy-lambda-callback:
+    name: DMPro QA Lambda Deploy Http Callback
+    needs: [lambda-detect-changes]
+    if: ${{ (inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH') && (needs.lambda-detect-changes.outputs.callback == 'true' || needs.lambda-detect-changes.outputs.callback == 'layer') }}
+    uses: ./.github/workflows/job_dm_lambda_build.yaml
+    with:
+      branch: release
+      repo: ${{ inputs.dm_lambda_repo }}         
+      working_dir: ./lambda/http_callback
+      node_versions: "['20.14.0']"
+      service: "callback"
+      layer_name: "module_callback"
+      range: ${{ needs.lambda-detect-changes.outputs.callback }}
+    secrets: inherit
+##########################################
+############# QA Deploy ##################
+########################################## 
   qa-deploy: #inside gitops repo
     name: DMPro QA Deploy
     if: ${{ inputs.release_env == 'QA' || inputs.release_env == 'QA/MINOR' || inputs.release_env == 'QA/BOTH'}} 
@@ -270,7 +274,9 @@ jobs:
             sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/major/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/major/out" "EESFSOKQTN9WW"
             sync_and_invalidate "s3://${{ inputs.qa_fe_bucket }}/minor/pre-out/" "s3://${{ inputs.qa_fe_bucket }}/minor/out" "E32VCJC4FYWR6P"
           fi
-
+##########################################
+############ Hotfix Deploy ###############
+########################################## 
   #1.0.2 SSR 구성
   hotfix-deploy:
     name: DMPro HOTFIX Deploy
@@ -339,7 +345,9 @@ jobs:
           git push origin main
         continue-on-error: true
 
-
+##########################################
+########### PROD Lambda Deploy ###########
+########################################## 
   prod-deploy-lambda-email:
     name: DMPro PROD Lambda Deploy Email
     needs: [lambda-detect-changes]
@@ -351,9 +359,9 @@ jobs:
       working_dir: ./lambda/firmware_email
       node_versions: "['20.14.0']"
       service: "email"
-      layer_name: " " #운영은 module_fwemail 으로 되어있음
-      #range: ${{ needs.lambda-detect-changes.outputs.email }}
-      range: "true"
+      layer_name: "module_email" #운영은 module_fwemail 으로 되어있음
+      range: ${{ needs.lambda-detect-changes.outputs.email }}
+      #range: "true"
     secrets: inherit
 
   prod-deploy-lambda-upgrade:
@@ -368,8 +376,8 @@ jobs:
       node_versions: "['20.14.0']"
       service: "upgrade"
       layer_name: "module"
-      #range: ${{ needs.lambda-detect-changes.outputs.upgrade }}
-      range: "true"
+      range: ${{ needs.lambda-detect-changes.outputs.upgrade }}
+      #range: "true"
     secrets: inherit
   
   prod-deploy-lambda-syncw:
@@ -384,10 +392,28 @@ jobs:
       node_versions: "['20.14.0']"
       service: "syncw"
       layer_name: "module_syncwarranty"
-      #range: ${{ needs.lambda-detect-changes.outputs.syncw }}
-      range: "true"
+      range: ${{ needs.lambda-detect-changes.outputs.syncw }}
+      #range: "true"
     secrets: inherit
 
+  prod-deploy-lambda-callback:
+    name: DMPro PROD Lambda Deploy Http Callback
+    needs: [lambda-detect-changes]
+    if: ${{ (inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' || inputs.release_env == 'PROD/BOTH') && (needs.lambda-detect-changes.outputs.callback == 'true' || needs.lambda-detect-changes.outputs.callback == 'layer') }}
+    uses: ./.github/workflows/job_dm_lambda_build.yaml
+    with:
+      branch: production
+      repo: ${{ inputs.dm_lambda_repo }}         
+      working_dir: ./lambda/http_callback
+      node_versions: "['20.14.0']"
+      service: "callback"
+      layer_name: "module_callback"
+      range: ${{ needs.lambda-detect-changes.outputs.callback }}
+      #range: "true"
+    secrets: inherit
+##########################################
+############## PROD Deploy ###############
+########################################## 
   prod-deploy:
     name: DMPro PROD Deploy
     if: ${{ inputs.release_env == 'PROD' || inputs.release_env == 'PROD/MINOR' }} 
