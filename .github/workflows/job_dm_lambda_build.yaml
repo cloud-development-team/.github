@@ -75,6 +75,8 @@ jobs:
             echo "function_name=${{ vars.FUNCTION_UPGRADE }}" >> $GITHUB_OUTPUT
           elif [ "${{ inputs.service }}" == "syncw" ]; then
             echo "function_name=${{ vars.FUNCTION_SYNCW }}" >> $GITHUB_OUTPUT
+          elif [ "${{ inputs.service }}" == "callback" ]; then
+            echo "function_name=${{ vars.FUNCTION_CALLBACK }}" >> $GITHUB_OUTPUT
           fi
 
           echo "region=${{ vars.REGION }}" >> $GITHUB_OUTPUT
@@ -340,6 +342,19 @@ jobs:
       yaml_path: "no_eks"
       json_path: ${{ needs.init.outputs.json_path }}
       application_name: "dmpro-agent-scheduler-syncw"
+    secrets: inherit
+
+  gitops-update-call-callback:
+    needs: [init, versioning, npm-build]
+    if: ${{ inputs.service == 'callback' }}
+    uses: cloud-development-team/.github/.github/workflows/gitops-update.yaml@main
+    with:
+      repository_name: "cloud-development-team/dmpro-gitops"
+      image_name: "no_eks"
+      image_tag: ${{ needs.versioning.outputs.version }}-callback
+      yaml_path: "no_eks"
+      json_path: ${{ needs.init.outputs.json_path }}
+      application_name: "dmpro-agent-scheduler-callback"
     secrets: inherit
 
   create-release:
