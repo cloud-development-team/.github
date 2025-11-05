@@ -453,18 +453,18 @@ jobs:
           wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
 
-      - name: Deploy
-        run: |
-          while IFS= read -r line; do
-            if [[ "${line:0:1}" != " " ]]; then
-              service_name=$(echo "$line" | awk -F':' '{print $1}')
-            elif [[ $line == *"image-tag"* ]]; then
-              image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
-              yq -i '
-                .image.tag = "'$image_tag'"
-              ' ./$service_name/env/prod.yaml || true
-            fi
-          done < prod_version.yaml
+      # - name: Deploy
+      #   run: |
+      #     while IFS= read -r line; do
+      #       if [[ "${line:0:1}" != " " ]]; then
+      #         service_name=$(echo "$line" | awk -F':' '{print $1}')
+      #       elif [[ $line == *"image-tag"* ]]; then
+      #         image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
+      #         yq -i '
+      #           .image.tag = "'$image_tag'"
+      #         ' ./$service_name/env/prod.yaml || true
+      #       fi
+      #     done < prod_version.yaml
 
       - name: Commit changes
         run: |
@@ -494,6 +494,7 @@ jobs:
           --output text))
 
           aws s3 sync s3://${{ inputs.qa_fe_bucket }}/${{ inputs.dm_sw_ver }}/out ./out
+          aws s3 sync s3://${{ inputs.prod_fe_bucket }}/out s3://${{ inputs.prod_fe_bucket }}/${{ inputs.release_version }}/out
           aws s3 sync ./out s3://${{ inputs.prod_fe_bucket }}/out --delete
 
           # Setting CloudFront
