@@ -34,6 +34,9 @@ on:
           - dmpro-authorization
           - global-manager-log
           - hv-ui-components
+          - dmpro-cleaner-data
+          - dmpro-agent-scheduler
+          - platform-job-scheduler
       ANALYSIS_PATH:
         description: 'Target Path'
         required: true
