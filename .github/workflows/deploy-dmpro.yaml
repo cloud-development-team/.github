@@ -453,8 +453,16 @@ jobs:
           wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
           chmod +x /usr/local/bin/yq
 
-      # - name: Deploy
-      #   run: |
+      - name: Deploy
+        run: |
+          service_name="dmpro-hook-portal"
+          image_tag=$(yq -r '.["'"$service_name"'"]."image-tag"' prod_version.yaml)
+          if [[ -n "$image_tag" ]]; then
+            yq -i '.image.tag = "'"$image_tag"'"' "./$service_name/env/prod.yaml"
+          else
+            echo "image-tag not found for $service_name in prod_version.yaml"
+          fi
+
       #     while IFS= read -r line; do
       #       if [[ "${line:0:1}" != " " ]]; then
       #         service_name=$(echo "$line" | awk -F':' '{print $1}')
