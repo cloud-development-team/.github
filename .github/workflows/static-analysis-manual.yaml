@@ -37,6 +37,7 @@ on:
           - dmpro-cleaner-data
           - dmpro-agent-scheduler
           - platform-job-scheduler
+          - sightmind-hvcp-authorization
       ANALYSIS_PATH:
         description: 'Target Path'
         required: true
