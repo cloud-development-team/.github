@@ -72,6 +72,8 @@ jobs:
             REPO_NAME=cloudrnd-rule-engine
           elif [ ${{inputs.STREAM}}  == "sightmind-hc-frontend-mono" ]; then
             REPO_NAME=hc-frontend-mono
+          elif [ ${{inputs.STREAM}}  == "sightmind-hvcp-authorization" ]; then
+            REPO_NAME=hvcp-authorization
           else
             REPO_NAME=${{inputs.STREAM}}
           fi
