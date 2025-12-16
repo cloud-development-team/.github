@@ -455,24 +455,16 @@ jobs:
 
       - name: Deploy
         run: |
-          service_name="dmpro-hook-portal"
-          image_tag=$(yq -r '.["'"$service_name"'"]."image-tag"' prod_version.yaml)
-          if [[ -n "$image_tag" ]]; then
-            yq -i '.image.tag = "'"$image_tag"'"' "./$service_name/env/prod.yaml"
-          else
-            echo "image-tag not found for $service_name in prod_version.yaml"
-          fi
-
-      #     while IFS= read -r line; do
-      #       if [[ "${line:0:1}" != " " ]]; then
-      #         service_name=$(echo "$line" | awk -F':' '{print $1}')
-      #       elif [[ $line == *"image-tag"* ]]; then
-      #         image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
-      #         yq -i '
-      #           .image.tag = "'$image_tag'"
-      #         ' ./$service_name/env/prod.yaml || true
-      #       fi
-      #     done < prod_version.yaml
+          while IFS= read -r line; do
+            if [[ "${line:0:1}" != " " ]]; then
+              service_name=$(echo "$line" | awk -F':' '{print $1}')
+            elif [[ $line == *"image-tag"* ]]; then
+              image_tag=$(echo "$line" | awk -F': "' '{print $2}' | awk -F'"' '{print $1}')
+              yq -i '
+                .image.tag = "'$image_tag'"
+              ' ./$service_name/env/prod.yaml || true
+            fi
+          done < prod_version.yaml
 
       - name: Commit changes
         run: |
