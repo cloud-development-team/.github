@@ -60,6 +60,11 @@ jobs:
             fi
 
             echo "set env dmpro"
+            
+            ###authz into healthpro
+            auth_repo=hvcp-authorization
+            echo "auth_repo=$auth_repo" >> $GITHUB_OUTPUT
+
             echo "dm_be_repo=$dm_be_repo" >> $GITHUB_OUTPUT
             echo "dm_lambda_repo=$dm_lambda_repo" >> $GITHUB_OUTPUT
             echo "dm_sw_ver=$dm_sw_ver" >> $GITHUB_OUTPUT
@@ -201,7 +206,8 @@ jobs:
     secrets: inherit  
 
   auth-backend:
-    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
+    #if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
+    if: ${{ github.actor == 'jenkins-se'}} 
     needs: [initial_setting]
     name: AuthZ Backend Deploy
     uses: ./.github/workflows/deploy-authZ-backend.yaml
