@@ -207,7 +207,7 @@ jobs:
 
   auth-backend:
     #if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
-    if: ${{ github.actor == 'jenkins-se'}} 
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 
     needs: [initial_setting]
     name: AuthZ Backend Deploy
     uses: ./.github/workflows/deploy-authZ-backend.yaml
