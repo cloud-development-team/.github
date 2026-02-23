@@ -162,6 +162,7 @@ jobs:
   oncloud-qa-ec2-deployment:
     runs-on: ubuntu-latest
     needs: [oncloud-qa-deployment]
+    environment: main
     outputs:
       matrix: ${{ steps.build.outputs.matrix }}
 
