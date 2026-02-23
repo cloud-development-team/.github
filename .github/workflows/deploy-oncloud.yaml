@@ -31,27 +31,42 @@ on:
           required: false
           default: ""
           type: string
+      project:
+          description: 'Project'
+          required: true
+          default: ""
+          type: string
 
 
 
 
 jobs:     
-  build-and-deploy-to-s3-qa:
+  cloudai-build-and-deploy-to-s3-qa:
     name: Build and push artifact to s3(QA)
-    if: ${{ inputs.target_branch == 'release' }}
+    if: ${{ inputs.target_branch == 'release' && inputs.project == 'cloudai' }}
     uses: ./.github/workflows/job_cloudai_qa_deploy.yaml
     with:
       release_env: ${{ inputs.release_env }}
       backend_repo: ${{ inputs.backend_repo }}
       release_version: ${{ inputs.release_version }}
     secrets: inherit
-  build-and-deploy-to-s3-prod:
+  cloudai-build-and-deploy-to-s3-prod:
     name: Build and push artifact to s3(PROD)
-    if: ${{ inputs.target_branch == 'production' }}
+    if: ${{ inputs.target_branch == 'production' && inputs.project == 'cloudai' }}
     uses: ./.github/workflows/job_cloudai_prod_deploy.yaml
     with:
       release_env: ${{ inputs.release_env }}
       backend_repo: ${{ inputs.backend_repo }}
       release_version: ${{ inputs.release_version }}
       target_version: ${{ inputs.target_version }}
+    secrets: inherit
+  oncloud-deploy-qa:
+    name: Deploy for Oncloud application(QA, EC2+EKS)
+    if: ${{ inputs.target_branch == 'release' && inputs.project == 'oncloud' }}
+    uses: ./.github/workflows/job_oncloud_qa_deploy.yaml
+    with:
+      target_version: ${{ inputs.target_version }}
+      release_env: ${{ inputs.release_env }}
+      backend_repo: ${{ inputs.backend_repo }}
+      release_version: ${{ inputs.release_version }}
     secrets: inherit

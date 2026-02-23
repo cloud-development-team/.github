@@ -124,6 +124,24 @@ jobs:
                 target_branch=release
                 target_version=major
               fi
+
+            elif grep -q "backend-starscream-release" <<< "${{ inputs.release_version }}"; then
+              echo "set env for oncloud"
+              oncloud_backend_repo=oncloud-gitops
+              project=oncloud
+              echo "backend_repo=$oncloud_backend_repo" >> $GITHUB_OUTPUT
+          
+              if grep -q "MINOR" <<< "${{ inputs.release_env }}"; then
+                target_version=minor
+              elif grep -q "MAJOR" <<< "${{ inputs.release_env }}"; then
+                target_version=major
+              fi
+
+              if grep -q "PROD" <<< "${{ inputs.release_env }}"; then
+                target_branch=production
+              elif grep -q "QA" <<< "${{ inputs.release_env }}"; then
+                target_branch=release
+              fi
             fi
           fi
           
@@ -180,30 +198,20 @@ jobs:
       target_version: ${{ needs.initial_setting.outputs.target_version }}
     secrets: inherit  
   
-  cloudai:
-    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'STARSCREAM' }}
+  oncloud:
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'STARSCREAM'}}
     needs: [initial_setting]
     name: CloudAI Backend Deploy
-    uses: ./.github/workflows/deploy-cloudai.yaml
+    uses: ./.github/workflows/deploy-oncloud.yaml
     with:
       release_env: ${{ inputs.release_env }}
       backend_repo: ${{ needs.initial_setting.outputs.backend_repo }}
       target_branch: ${{ needs.initial_setting.outputs.target_branch }}
       release_version: ${{ needs.initial_setting.outputs.release_version }}
       target_version: ${{ needs.initial_setting.outputs.target_version }}
+      project : ${{ needs.initial_setting.outputs.project }}
     secrets: inherit  
-  cloudai-test:
-    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'OPS' }}
-    needs: [initial_setting]
-    name: CloudAI Backend Deploy TEST
-    uses: ./.github/workflows/deploy-cloudai.yaml
-    with:
-      release_env: ${{ inputs.release_env }}
-      backend_repo: ${{ needs.initial_setting.outputs.backend_repo }}
-      target_branch: ${{ needs.initial_setting.outputs.target_branch }}
-      release_version: ${{ needs.initial_setting.outputs.release_version }}
-      target_version: ${{ needs.initial_setting.outputs.target_version }}
-    secrets: inherit  
+  
 
   auth-backend:
     #if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'IS360' }} 

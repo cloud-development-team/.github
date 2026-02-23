@@ -1,0 +1,189 @@
+name: CloudAI QA Build Deploy
+run-name: CloudAI QA Build Deploy - ${{ inputs.release_env }}
+
+permissions: write-all
+
+on:
+  workflow_call:
+    inputs:
+      release_env:
+        description: 'Release Environment'
+        required: true
+        default: ""
+        type: string
+      release_version:
+        description: 'Release Version'
+        required: true
+        default: ""
+        type: string
+      backend_repo:
+        description: 'backend Repo'
+        required: true
+        default: ""
+        type: string
+      target_version:
+          description: 'Target Version'
+          required: false
+          default: ""
+          type: string
+
+
+env:
+  CODEFREEZE: ${{ secrets.CODEFREEZE }}
+  GH_PAT_AUTOMATION: ${{ secrets.GH_PAT_AUTOMATION_SEMANTIC_RELEASE }}
+
+jobs:     
+  oncloud-qa-deployment:
+    name: Oncloud QA deployment
+    environment: main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/${{ inputs.backend_repo }}
+          ref: refs/heads/main
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+      - name: Parse version string
+        id: versioning
+        run: |
+          input="${{ inputs.release_version }}"
+
+          if [[ $input =~ backend-starscream-release-([^[:space:]]+)[[:space:]]+\(([^)]+)\) ]]; then
+            echo "shared_version=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+            echo "main_version=${BASH_REMATCH[2]}" >> $GITHUB_OUTPUT
+          fi
+      - name: Update version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["MainVersion"] = "${{ steps.versioning.outputs.main_version }}"' qa_version.json     
+            yq -i '.["JiraReleaseVersion"].["SWVersion"] = "${{ inputs.target_version }}"' qa_version.json
+            yq -i '.["JiraReleaseVersion"].["BackendSharedVersion"] = "${{ steps.versioning.outputs.shared_version }}"' qa_version.json
+      - name: Get Time
+        id: time
+        uses: nanzm/get-time-action@master
+        with:
+          timeZone: UTC-9
+          format: 'YYYY-MM-DD HH:mm:ss'
+
+      - name: Update Release date to version.json information
+        uses: mikefarah/yq@v4.34.2
+        with:
+          cmd: |
+            yq -i '.["JiraReleaseVersion"].["ReleaseDate"] = "${{ steps.time.outputs.time }}"' qa_version.json
+      
+
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "cd: deploy qa for ${{ inputs.release_version }}" && \
+          git push origin main
+        continue-on-error: true
+
+  ##################################################
+  #  EKS Deployment
+  ##################################################
+  oncloud-qa-eks-deployment:
+    name: Oncloud QA EKS deployment
+    environment: main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/${{ inputs.backend_repo }}
+          ref: refs/heads/main
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Checkout helm repo
+        uses: actions/checkout@v4
+        with:
+          repository: cloud-development-team/webconnect-helm-charts
+          ref: refs/heads/main
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+          path: helmrepo
+      
+      - name: Update Helm values (EKS)
+        run: |
+          set -e
+
+          QA_FILE="qa_version.json"
+          HELM_DIR="helmrepo"
+
+          clusters=$(jq -r 'keys[] | select(test("^Backend.*EKS$"))' $QA_FILE)
+
+          for cluster_key in $clusters; do
+
+            cluster_name=$(echo "$cluster_key" \
+              | sed -E 's/^Backend(.*)EKS$/\1/' \
+              | tr '[:upper:]' '[:lower:]')
+
+            echo "Processing EKS cluster: $cluster_name"
+
+            jq -r --arg key "$cluster_key" '.[$key] | to_entries[] | "\(.key) \(.value)"' $QA_FILE \
+            | while read app version; do
+
+              values_file="$HELM_DIR/wc025/qa/$cluster_name/$app/values.yaml"
+
+              if [ -f "$values_file" ]; then
+                yq -i '.deployment.tag = "'"$version"'"' "$values_file"
+              else
+                echo "WARNING: $values_file not found"
+              fi
+
+            done
+          done
+
+      - name: Check Helm changes
+        id: helm-check
+        run: |
+          cd helmrepo
+          git config user.name "GitHub Actions Bot" && \
+          git config user.email "<>" && \
+          git add --all
+          git commit -m "cd: deploy qa for ${{ inputs.release_version }}" && \
+          git push origin main
+        continue-on-error: true
+##################################################
+#  EC2 Deployment
+##################################################
+  oncloud-qa-ec2-deployment:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.build.outputs.matrix }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: cloud-development-team/${{ inputs.backend_repo }}
+          ref: refs/heads/main
+          token: ${{ secrets.GH_MANAGEPACKAGE_TOKEN }}
+
+      - name: Build EC2 matrix
+        id: build
+        run: |
+          QA_FILE="qa_version.json"
+
+          matrix=$(jq -c '
+            .BackendEC2
+            | to_entries
+            | map({
+                app: .key,
+                version: .value
+              })
+          ' $QA_FILE)
+
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "Generated matrix:"
+          echo "$matrix"
