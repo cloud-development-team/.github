@@ -1,5 +1,5 @@
-name: CloudAI  Deploy
-run-name: CloudAI Deploy - ${{ inputs.release_env }}
+name: Oncloud  Deploy
+run-name: Oncloud Deploy - ${{ inputs.release_env }}
 
 permissions: write-all
 
