@@ -23,7 +23,7 @@ on:
 
 jobs:
   initial_setting:
-    if: ${{ github.actor == 'jenkins-se' || github.actor == 'MAYFCHOI' }} 
+    if: ${{ github.actor == 'jenkins-se' }} 
     outputs:
       dm_be_repo: ${{ steps.set_env.outputs.dm_be_repo }}
       dm_lambda_repo: ${{ steps.set_env.outputs.dm_lambda_repo }}
@@ -199,7 +199,7 @@ jobs:
     secrets: inherit  
   
   oncloud:
-    if: ${{ github.actor == 'MAYFCHOI' && inputs.jira_key == 'STARSCREAM'}}
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'STARSCREAM'}}
     needs: [initial_setting]
     name: CloudAI Backend Deploy
     uses: ./.github/workflows/deploy-oncloud.yaml
