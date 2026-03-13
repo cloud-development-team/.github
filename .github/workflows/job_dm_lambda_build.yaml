@@ -222,7 +222,7 @@ jobs:
           --layer-name ${{ inputs.layer_name }} \
           --description "Updated Layer ${{ inputs.sem_ver }}" \
           --zip-file fileb://modules.zip \
-          --compatible-runtimes nodejs20.x \
+          --compatible-runtimes nodejs22.x \
           --query 'LayerVersionArn' \
           --output text) 
 
