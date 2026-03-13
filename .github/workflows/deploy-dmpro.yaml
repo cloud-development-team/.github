@@ -111,7 +111,7 @@ jobs:
       branch: release
       repo: ${{ inputs.dm_lambda_repo }}         
       working_dir: ./lambda/firmware_email
-      node_versions: "['20.14.0']"
+      node_versions: "['22']"
       service: "email"
       layer_name: "module_email"
       range: ${{ needs.lambda-detect-changes.outputs.email }}
@@ -126,7 +126,7 @@ jobs:
       branch: release
       repo: ${{ inputs.dm_lambda_repo }}         
       working_dir: ./lambda/firmware_upgrade
-      node_versions: "['20.14.0']"
+      node_versions: "['22']"
       service: "upgrade"
       layer_name: "module"
       range: ${{ needs.lambda-detect-changes.outputs.upgrade }}
@@ -141,7 +141,7 @@ jobs:
       branch: release
       repo: ${{ inputs.dm_lambda_repo }}         
       working_dir: ./lambda/warranty_sync
-      node_versions: "['20.14.0']"
+      node_versions: "['22']"
       service: "syncw"
       layer_name: "module_syncwarranty"
       range: ${{ needs.lambda-detect-changes.outputs.syncw }}
@@ -156,7 +156,7 @@ jobs:
       branch: release
       repo: ${{ inputs.dm_lambda_repo }}         
       working_dir: ./lambda/http_callback
-      node_versions: "['20.14.0']"
+      node_versions: "['22']"
       service: "callback"
       layer_name: "module_callback"
       range: ${{ needs.lambda-detect-changes.outputs.callback }}
@@ -357,7 +357,7 @@ jobs:
       branch: production
       repo: ${{ inputs.dm_lambda_repo }}         
       working_dir: ./lambda/firmware_email
-      node_versions: "['20.14.0']"
+      node_versions: "['22']"
       service: "email"
       layer_name: "module_email" #운영은 module_fwemail 으로 되어있음
       range: ${{ needs.lambda-detect-changes.outputs.email }}
@@ -373,7 +373,7 @@ jobs:
       branch: production
       repo: ${{ inputs.dm_lambda_repo }}         
       working_dir: ./lambda/firmware_upgrade
-      node_versions: "['20.14.0']"
+      node_versions: "['22']"
       service: "upgrade"
       layer_name: "module"
       range: ${{ needs.lambda-detect-changes.outputs.upgrade }}
@@ -389,7 +389,7 @@ jobs:
       branch: production
       repo: ${{ inputs.dm_lambda_repo }}         
       working_dir: ./lambda/warranty_sync
-      node_versions: "['20.14.0']"
+      node_versions: "['22']"
       service: "syncw"
       layer_name: "module_syncwarranty"
       range: ${{ needs.lambda-detect-changes.outputs.syncw }}
@@ -405,7 +405,7 @@ jobs:
       branch: production
       repo: ${{ inputs.dm_lambda_repo }}         
       working_dir: ./lambda/http_callback
-      node_versions: "['20.14.0']"
+      node_versions: "['2']"
       service: "callback"
       layer_name: "module_callback"
       range: ${{ needs.lambda-detect-changes.outputs.callback }}
