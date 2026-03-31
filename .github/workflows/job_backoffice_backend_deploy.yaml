@@ -121,7 +121,7 @@ jobs:
 
           echo "Processing EKS cluster for backoffice"
 
-          jq -r --arg key "service" '.[$key] | to_entries[] | "\(.key) \(.value)"' $QA_FILE \
+          jq -r --arg key "Service" '.[$key] | to_entries[] | "\(.key) \(.value)"' $QA_FILE \
           | while read app version; do
 
             values_file="$HELM_DIR/wc025/qa/app/$app/values.yaml"
