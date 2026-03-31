@@ -45,7 +45,7 @@ on:
 jobs:     
   backoffice-backend-deploy:
     name: Deploy Backend Service
-    if: ${{ inputs.backend_repo == 'sysadmin-gitops' }}
+    if: ${{ inputs.project == 'backoffice_backend' }}
     uses: ./.github/workflows/job_backoffice_backend_deploy.yaml
     with:
       release_env: ${{ inputs.release_env }}
