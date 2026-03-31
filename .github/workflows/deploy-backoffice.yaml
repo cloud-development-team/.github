@@ -1,4 +1,4 @@
-name: Backoffice  Deploy
+name: Backoffice Deploy
 run-name: Backoffice Deploy - ${{ inputs.release_version }}
 
 permissions: write-all
@@ -22,7 +22,7 @@ on:
         default: ""
         type: string
       frontend_repo:
-        description: 'backend Repo'
+        description: 'frontend Repo'
         required: false
         default: ""
         type: string
@@ -42,14 +42,11 @@ on:
           default: ""
           type: string
 
-
-
-
 jobs:     
   backoffice-backend-deploy:
-    name: Deploy Backend Service to QA
-    if: ${{ inputs.target_branch == 'release' && inputs.backend_repo == 'sysadmin-gitops' }}
-    uses: ./.github/workflows/job_backoffice_qa_deploy.yaml
+    name: Deploy Backend Service
+    if: ${{ inputs.backend_repo == 'sysadmin-gitops' }}
+    uses: ./.github/workflows/job_backoffice_backend_deploy.yaml
     with:
       release_env: ${{ inputs.release_env }}
       backend_repo: ${{ inputs.backend_repo }}
