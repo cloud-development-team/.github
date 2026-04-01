@@ -54,3 +54,15 @@ jobs:
       target_branch: ${{ inputs.target_branch }}
       target_version: ${{ inputs.target_version }}
     secrets: inherit
+
+  backoffice-frontend-deploy:
+    name: Deploy frontend Service
+    if: ${{ inputs.project == 'backoffice_frontend' }}
+    uses: ./.github/workflows/job_backoffice_frontend_deploy.yaml
+    with:
+      release_env: ${{ inputs.release_env }}
+      backend_repo: ${{ inputs.backend_repo }}
+      release_version: ${{ inputs.release_version }}
+      target_branch: ${{ inputs.target_branch }}
+      target_version: ${{ inputs.target_version }}
+    secrets: inherit
