@@ -62,10 +62,11 @@ jobs:
     secrets: inherit
   oncloud-deploy-qa:
     name: Deploy for Oncloud application(QA, EC2+EKS)
-    if: ${{ inputs.target_branch == 'release' && inputs.project == 'oncloud' }}
-    uses: ./.github/workflows/job_oncloud_qa_deploy.yaml
+    if: ${{ inputs.project == 'oncloud' }}
+    uses: ./.github/workflows/job_oncloud_deploy.yaml
     with:
       target_version: ${{ inputs.target_version }}
+      target_branch: ${{ inputs.target_branch }}
       release_env: ${{ inputs.release_env }}
       backend_repo: ${{ inputs.backend_repo }}
       release_version: ${{ inputs.release_version }}
