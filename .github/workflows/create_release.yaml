@@ -244,7 +244,7 @@ jobs:
   
 
   backoffice:
-    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'BO' && needs.initial_setting.outputs.backend_repo == 'sysadmin-gitops'  }}
+    if: ${{ github.actor == 'jenkins-se' && inputs.jira_key == 'BO' }}
     needs: [initial_setting]
     name: Backoffice Backend Deploy
     uses: ./.github/workflows/deploy-backoffice.yaml
